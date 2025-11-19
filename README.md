@@ -11,7 +11,7 @@ Usage:
 
 ```
 python3 src/main.py
-```
+
 ************************************************
 Please enter your last name: Evans
 Please enter your first name: Shawn
