@@ -28,7 +28,6 @@ class SheetWriter:
             self.writer.update_page_form_field_values(self.page, {f"topmostSubform[0].Page1[0].TextField1[{position}]":  pay_table.offset_string(pay_period, day)} )
 
     def output(self, output_file):
+        # self.writer.remove_annotations(subtypes=["/Widget"])
         self.writer.write(output_file)
         os.startfile("timesheet.pdf")
-
-
