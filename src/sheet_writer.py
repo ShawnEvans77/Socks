@@ -24,8 +24,8 @@ class SheetWriter:
 
         days = [10, 14, 18, 22, 26, 30, 34, 75, 84, 85, 86, 87, 88, 89]
 
-        for day, position in enumerate(days):
-            self.writer.update_page_form_field_values(self.page, {f"topmostSubform[0].Page1[0].TextField1[{position}]":  pay_table.offset_string(pay_period, day)} )
+        for day, day_index in enumerate(days):
+            self.writer.update_page_form_field_values(self.page, {f"topmostSubform[0].Page1[0].TextField1[{day_index}]":  pay_table.offset_string(pay_period, day)} )
 
     def output(self, output_file):
         # self.writer.remove_annotations(subtypes=["/Widget"])
