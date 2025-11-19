@@ -16,7 +16,7 @@ class PayTable:
         return self.pay_dict[pay_period]
     
     def month_day(self, date) -> str:
-        return f"{date.month}/{date.day}"
+        return date.strftime("%m/%d")
     
     def start_string(self, pay_period) -> str:
         return self.month_day(self.pay_dict[pay_period])
