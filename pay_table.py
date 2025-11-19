@@ -15,10 +15,17 @@ class PayTable:
     def get(self, pay_period):
         return self.pay_dict[pay_period]
     
+    def month_day(self, date):
+        return f"{date.month}/{date.day}"
+    
     def start_string(self, pay_period) -> str:
-        start = self.pay_dict[pay_period]
-        return f"{start.month}/{start.day}"
-
+        return self.month_day(self.pay_dict[pay_period])
+   
     def end_string(self, pay_period) -> str:
-        end = self.pay_dict[pay_period] + d.timedelta(days=13)
-        return f"{end.month}/{end.day}"
+        return self.month_day(self.pay_dict[pay_period] + d.timedelta(days=13))
+    
+    def offset_string(self, pay_period, offset):
+        return self.month_day(self.pay_dict[pay_period] + d.timedelta(days=offset))
+
+
+    
