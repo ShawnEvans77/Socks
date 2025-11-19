@@ -31,3 +31,10 @@ class SheetWriter:
         # self.writer.remove_annotations(subtypes=["/Widget"])
         self.writer.write(output_file)
         os.startfile("timesheet.pdf")
+
+    def generate_fields(self):
+        fields = self.writer.get_fields()
+
+        with open("resources/fields.txt", "w") as field_file:
+            for key in fields.keys():
+                field_file.write(key + "\n")
