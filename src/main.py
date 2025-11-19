@@ -2,7 +2,7 @@ import sheet_writer as sw
 from pypdf import PdfWriter # type: ignore
 
 def main():
-    sheet = sw.SheetWriter("resources/init.pdf")
+    sheet = sw.SheetWriter("resources/pdf input/init.pdf")
 
     print("************************************************")
     last = input("Please enter your last name: ")
@@ -15,7 +15,7 @@ def main():
     sheet.write_pay_period(pay_period)
     print("************************************************")
 
-    sheet.output("timesheet.pdf")
+    sheet.output_timesheet(f"{last}_Timesheet_{pay_period}.pdf")
 
 if __name__ == '__main__':
     main()

@@ -1,11 +1,10 @@
 import datetime as d
 
 class PayTable:
-
     pay_dict = {}
 
     def __init__(self):
-        with open("resources/pay_period.txt", "r") as file:
+        with open("resources/text input/pay_period.txt", "r") as file:
             for line in file:
                 tokens = line.split(',')
                 pay_period = tokens[0]
