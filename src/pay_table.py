@@ -5,7 +5,7 @@ class PayTable:
     pay_dict = {}
 
     def __init__(self):
-        with open("pay_period.txt", "r") as file:
+        with open("resourcespay_period.txt", "r") as file:
             for line in file:
                 tokens = line.split(',')
                 pay_period = tokens[0]
