@@ -1,4 +1,5 @@
 from pypdf import PdfReader, PdfWriter # type: ignore
+import pay_table as pt
 
 class SheetWriter:
 
@@ -16,4 +17,7 @@ class SheetWriter:
         self.writer.update_page_form_field_values(self.page,{f"topmostSubform[0].Page1[0].TextField1[{SheetWriter.first_pos}]": first_name})
 
     def write_pay_period(self, pay_period):
-        self.writer.update_page_form_field_values(self.page, {f"topmostSubform[0].Page1[0].TextField1[{SheetWriter.pay_pos}]":  f"{pay_period} - {pay_dict[pay_period]}"})  
+        pay_table = pt.PayTable()
+        self.writer.update_page_form_field_values(self.page, {f"topmostSubform[0].Page1[0].TextField1[{SheetWriter.pay_pos}]":  f"{pay_period}: {pay_table.start_string(pay_period)} - {pay_table.end_string(pay_period)}"})
+
+
