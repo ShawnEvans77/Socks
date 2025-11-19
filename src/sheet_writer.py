@@ -25,10 +25,3 @@ class SheetWriter:
 
         for day, position in enumerate(days):
             self.writer.update_page_form_field_values(self.page, {f"topmostSubform[0].Page1[0].TextField1[{position}]":  pay_table.offset_string(pay_period, day)} )
-
-
-
-
-
-
-
