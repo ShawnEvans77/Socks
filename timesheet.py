@@ -2,35 +2,26 @@
 from pypdf import PdfReader, PdfWriter # type: ignore
 import os
 
-reader = PdfReader("init.pdf")
-writer = PdfWriter()
-
-writer.append(reader)
-writer.set_need_appearances_writer(True)
+writer = PdfWriter("init.pdf")
 page = writer.pages[0]
-fields = writer.get_fields()
 
+name = input("Please enter your name: ")
+
+pay_period = input("Please enter the pay period: ")
+
+
+
+
+week_one = [10, 14, 18, 22, 26, 30, 34]
+week_two = [75, 84, 85, 86, 87, 88, 89]
+
+
+# fields = writer.get_fields()
+
+name = input("Please enter your name: ")
 writer.update_page_form_field_values(page,{f"topmostSubform[0].Page1[0].TextField1[7]": "Shawn Evans"},auto_regenerate=True,)
-writer.update_page_form_field_values(page,{f"topmostSubform[0].Page1[0].TextField1[84]": "11/28"},auto_regenerate=True,)
-# writer.update_page_form_field_values(page, fields, flatten=True)
-# writer.remove_annotations(subtypes="/Widget")
+
 
 writer.write("timesheet.pdf")
 
 os.startfile("timesheet.pdf")
-
-# sun = 10
-# mon = 14
-# tues = 18
-# wed = 22
-# thurs = 26
-# fri = 30
-# sat = 34
-
-# sun = 75
-# mon = 84
-# tues = 85
-# wed = 86
-# thurs = 87
-# fri = 88
-# sat = 89

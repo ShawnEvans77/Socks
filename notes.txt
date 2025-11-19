@@ -1,0 +1,15 @@
+# sun = 10
+# mon = 14
+# tues = 18
+# wed = 22
+# thurs = 26
+# fri = 30
+# sat = 34
+
+# sun = 75
+# mon = 84
+# tues = 85
+# wed = 86
+# thurs = 87
+# fri = 88
+# sat = 89
