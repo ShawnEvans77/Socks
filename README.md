@@ -1,4 +1,5 @@
-Welcome to 'socks', a tool for Learning Center tutors to automatically generate their timesheets!
+Welcome to 'socks', a tool for Learning Center tutors to automatically generate their timesheets! Are you annoyed by having to
+fill out a paper each time you want to collect your part-time salary? With this tool, you can generate your sheets automatically.
 
 You will need to install Pypdf and pip for this script to work properly.
 
@@ -11,3 +12,11 @@ Usage:
 ```
 python3 src/main.py
 ```
+************************************************
+Please enter your last name: Evans
+Please enter your first name: Shawn
+Please enter the pay period: 22
+************************************************
+```
+
+Will generate a properly filled in timesheet, that you can either print out and sign, or sign digitally! 
