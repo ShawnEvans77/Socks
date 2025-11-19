@@ -1,5 +1,13 @@
 Welcome to 'socks', a tool for Learning Center tutors to automatically generate their timesheets!
 
-Usage: src/main.py
+You will need to install Pypdf and pip for this script to work properly.
 
-You will need to install Pypdf for this script to work properly.
+```
+pip install pypdf
+```
+
+Usage:
+
+```
+python3 src/main.py
+```

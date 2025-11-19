@@ -9,6 +9,7 @@ def main():
 
     sheet = sw.SheetWriter(writer, page)
 
+    print("************************************************")
     last = input("Please enter your last name: ")
     sheet.write_last(last)
 
@@ -17,6 +18,7 @@ def main():
 
     pay_period = input("Please enter the pay period: ")
     sheet.write_pay_period(pay_period)
+    print("************************************************")
 
     writer.write("timesheet.pdf")
     os.startfile("timesheet.pdf")
