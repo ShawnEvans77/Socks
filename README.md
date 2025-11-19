@@ -19,4 +19,4 @@ Please enter the pay period: 22
 ************************************************
 ```
 
-Will generate a properly filled in timesheet, that you can either print out and sign, or sign digitally! 
+Will generate a properly filled in timesheet, that you can either print out and sign, or sign digitally! Generated timesheets are stored in the timesheet directoe
