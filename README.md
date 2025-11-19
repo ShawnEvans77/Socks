@@ -1,7 +1,7 @@
 Welcome to 'socks', a tool for Learning Center tutors to automatically generate their timesheets! Are you annoyed by having to
 fill out a paper each time you want to collect your part-time salary? With this tool, you can generate your sheets automatically.
 
-You will need to install Pypdf and pip for this script to work properly.
+You will need to install Pypdf, pip, and python for this script to work properly.
 
 ```
 pip install pypdf
