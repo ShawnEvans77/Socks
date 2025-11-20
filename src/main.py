@@ -11,7 +11,7 @@ def main():
     first = input("Please enter your first name: ")
     sheet.write_first(first)
 
-    pay_period = input("Please enter the pay period: ")
+    pay_period = int(input("Please enter the pay period: "))
     sheet.write_pay_period(pay_period)
     print("************************************************")
 
