@@ -19,4 +19,5 @@ Please enter the pay period: 22
 ************************************************
 ```
 
-Will generate a properly filled in timesheet, that you can either print out and sign, or sign digitally! Generated timesheets are stored in the timesheet directory.
+
+Will generate a properly filled in timesheet, that you can either print out and sign, or sign digitally! Generated timesheets are stored in the timesheet directory. Development is ongoing. I have plans to make this a web app, then distribue it to departments in my school!
