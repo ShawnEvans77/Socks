@@ -20,12 +20,12 @@ class SheetWriter:
 
     def write_pay_period(self, pay_period: int):
         pay_table = pt.PayTable()
-        self.writer.update_page_form_field_values(self.page, {f"topmostSubform[0].Page1[0].TextField1[{SheetWriter.pay_pos}]":  f"{pay_period}: {pay_table.start_string(pay_period)} - {pay_table.end_string(pay_period)}"})
+        self.writer.update_page_form_field_values(self.page, {f"topmostSubform[0].Page1[0].TextField1[{SheetWriter.pay_pos}]":  f"{pay_period}: {pay_table.start_date_string(pay_period)} - {pay_table.end_date_string(pay_period)}"})
 
         days = [10, 14, 18, 22, 26, 30, 34, 75, 84, 85, 86, 87, 88, 89]
 
         for day, day_index in enumerate(days):
-            self.writer.update_page_form_field_values(self.page, {f"topmostSubform[0].Page1[0].TextField1[{day_index}]":  pay_table.offset_string(pay_period, day)} )
+            self.writer.update_page_form_field_values(self.page, {f"topmostSubform[0].Page1[0].TextField1[{day_index}]":  pay_table.date_offset_string(pay_period, day)} )
 
     def output(self, output_file_name: str):
         self.writer.write(output_file_name)
