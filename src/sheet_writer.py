@@ -2,8 +2,7 @@ from pypdf import PdfReader, PdfWriter # type: ignore
 import pay_table as pt
 import datetime as d
 
-class SheetWriter:
-
+class SheetWriter:    
     last_pos, first_pos = 6, 7 # SIX SEVEN!!! :3
     pay_pos = 5
 
