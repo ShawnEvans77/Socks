@@ -1,7 +1,6 @@
 from pypdf import PdfReader, PdfWriter # type: ignore
 import pay_table as pt
 import datetime as d
-import os
 
 class SheetWriter:
 
