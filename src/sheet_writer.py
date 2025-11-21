@@ -31,8 +31,6 @@ class SheetWriter:
 
     def output_timesheet(self, output_file_name: str):
         self.output(f"timesheets/{output_file_name}")
-        os.chdir("timesheets/")
-        os.startfile(f"timesheets/{output_file_name}")
 
     # def generate_fields(self):
     #     fields = self.writer.get_fields()
