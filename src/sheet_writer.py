@@ -32,12 +32,12 @@ class SheetWriter:
     def output_timesheet(self, output_file_name: str):
         self.output(f"timesheets/{output_file_name}")
 
-    # def generate_fields(self):
-    #     fields = self.writer.get_fields()
+    def generate_fields(self):
+        fields = self.writer.get_fields()
 
-    #     with open("resources/fields.txt", "w") as field_file:
-    #         for key in fields.keys():
-    #             field_file.write(key + "\n")
+        with open("resources/fields.txt", "w") as field_file:
+            for key in fields.keys():
+                field_file.write(key + "\n")
 
     def view_fields_index(self):
         start = 0
