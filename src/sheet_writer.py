@@ -67,44 +67,6 @@ class SheetWriter:
             self.writer.update_page_form_field_values(self.page, {time_out_field: time_out})
 
             j = 0 if (j == 6) else (j+1)
-         
-        # for i in range(len(SheetWriter.week_one_time_in_out_indices)):
-
-        #     print(i, end=" ")
-
-        #     time_in_index = SheetWriter.week_one_time_in_out_indices[i][0]
-        #     time_out_index = SheetWriter.week_one_time_in_out_indices[i][1]
-            
-        #     time_in_field = f"topmostSubform[0].Page1[0].TextField1[{time_in_index}]"
-        #     time_out_field = f"topmostSubform[0].Page1[0].TextField1[{time_out_index}]"
-
-        #     schedule = SheetWriter.schedule_table.get(self.name)
-
-        #     time_in = schedule[i][0]
-        #     time_out = schedule[i][1]
-
-        #     self.writer.update_page_form_field_values(self.page, {time_in_field: time_in})
-        #     self.writer.update_page_form_field_values(self.page, {time_out_field: time_out})
-
-        # print("\n")
-
-        # for j in range(len(SheetWriter.week_two_time_in_out_indices)):
-
-        #     print(j, end=" ")
-
-        #     time_in_index = SheetWriter.week_two_time_in_out_indices[j][0]
-        #     time_out_index = SheetWriter.week_two_time_in_out_indices[j][1]
-
-        #     time_in_field = f"topmostSubform[0].Page1[0].TextField1[{time_in_index}]"
-        #     time_out_field = f"topmostSubform[0].Page1[0].TextField1[{time_out_index}]"
-
-        #     schedule = SheetWriter.schedule_table.get(self.name)
-
-        #     time_in = schedule[j][0]
-        #     time_out = schedule[j][1]
-
-        #     self.writer.update_page_form_field_values(self.page, {time_in_field: time_in})
-        #     self.writer.update_page_form_field_values(self.page, {time_out_field: time_out})
 
     def write_timesheet(self):
         self.write_last_name()
