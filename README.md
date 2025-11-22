@@ -27,5 +27,6 @@ name=matrix
 ```
 
 Where:
-# name: is a string compromised of a first and last name, separated by a space. 
-# matrix: is a matrix representing start and end times on the ith day of the week.
+name: is a string compromised of a first and last name, separated by a space. 
+
+matrix: is a matrix representing start and end times on the ith day of the week.
