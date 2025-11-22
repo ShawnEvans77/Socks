@@ -18,5 +18,14 @@ Please enter the pay period: 22
 ************************************************
 ```
 
-
 This will generate a properly filled in timesheet, that you can either print out and sign, or sign digitally! Generated timesheets are stored in the timesheet directory with a nice file name. Development is ongoing. I have plans to make this a web app, then distribue it to departments in my school! I hope you enjoy my piece of software!
+
+Schedules can be inserted into the program at schedules.txt, which is in form:
+
+```
+name=matrix
+```
+
+Where:
+# name: is a string compromised of a first and last name, separated by a space. 
+# matrix: is a matrix representing start and end times on the ith day of the week.
