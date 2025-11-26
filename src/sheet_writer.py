@@ -63,11 +63,8 @@ class SheetWriter:
 
     def write_dates(self):
         for day, day_index in enumerate(SheetWriter.date_indices):
-
             date_field = SheetWriter.txt_field(day_index)
-    
             date_string = SheetWriter.pay_table.date_offset_string(self.pay_period, day)
-            
             self.update_field(date_field, date_string)
 
     def write_hours(self):
@@ -136,16 +133,16 @@ class SheetWriter:
     def output_timesheet(self, output_file_name: str):
         self.writer.write(f"timesheets/{output_file_name}")
 
-    # def generate_fields(self):
-    #     fields = self.writer.get_fields()
+    def generate_fields(self):
+        fields = self.writer.get_fields()
 
-    #     with open("resources/fields.txt", "w") as field_file:
-    #         for key in fields.keys():
-    #             field_file.write(key + "\n")
+        with open("resources/fields.txt", "w") as field_file:
+            for key in fields.keys():
+                field_file.write(key + "\n")
 
-    # def view_fields_index(self):
-    #     start = 0
-    #     end = 151
+    def view_fields_index(self):
+        start = 0
+        end = 151
 
-    #     for i in range(start, end):
-    #         self.writer.update_page_form_field_values(self.page, {f"topmostSubform[0].Page1[0].TextField1[{i}]":  i} )
+        for i in range(start, end):
+            self.writer.update_page_form_field_values(self.page, {f"topmostSubform[0].Page1[0].TextField1[{i}]":  i} )
