@@ -2,20 +2,29 @@ from pypdf import PdfReader, PdfWriter # type: ignore
 import pay_table as pt
 import datetime as d
 import schedule_table as st
-import os
+import clock as c
 
 class SheetWriter:
+    
     last_name_index, first_name_index = 6, 7 # SIX SEVEN!!! :3
     pay_period_index = 5
 
+    week_one_sub_total = (74, 73)
+    week_two_sub_total = (132, 137)
+    sub_totals_indices = week_one_sub_total + week_two_sub_total
+
     week_one_date_indices = (10, 14, 18, 22, 26, 30, 34)
     week_one_time_in_out_indices = ((11, 13), (15,17), (19,21), (23, 25), (27, 29), (31, 33), (35, 37))
+
+    week_one_hours_worked = (45, 46, 47, 48, 49, 50, 51)
+    week_two_hours_worked = (79, 108, 109, 110, 111, 112, 113)
 
     week_two_date_indices = (75, 84, 85, 86, 87, 88, 89)
     week_two_time_in_out_indices = ((76, 78), (90, 102), (91, 103), (92, 104), (93, 105), (94, 106), (95, 107))
 
     time_in_out_indices = week_one_time_in_out_indices + week_two_time_in_out_indices
     date_indices = week_one_date_indices + week_two_date_indices
+    hours_worked_indices = week_one_hours_worked + week_two_hours_worked
 
     pay_table = pt.PayTable()
     schedule_table = st.ScheduleTable()
@@ -50,11 +59,17 @@ class SheetWriter:
     def write_hours(self):
         j = 0
 
+        k = 0
+
+        week_total = 0
+
+        is_week_one, is_week_two = True, False
+
         for i in range(len(SheetWriter.time_in_out_indices)):
 
             time_in_index = SheetWriter.time_in_out_indices[i][0]
             time_out_index = SheetWriter.time_in_out_indices[i][1]
-            
+
             time_in_field = f"topmostSubform[0].Page1[0].TextField1[{time_in_index}]"
             time_out_field = f"topmostSubform[0].Page1[0].TextField1[{time_out_index}]"
 
@@ -63,10 +78,34 @@ class SheetWriter:
             time_in = schedule[j][0]
             time_out = schedule[j][1]
 
-            self.writer.update_page_form_field_values(self.page, {time_in_field: time_in})
-            self.writer.update_page_form_field_values(self.page, {time_out_field: time_out})
+            if len(time_in) != 0:
 
-            j = 0 if (j == 6) else (j+1)
+                hours_worked_int = c.Clock(time_in) - c.Clock(time_out)
+                hours_worked_str = str(hours_worked_int)
+
+                week_total += hours_worked_int
+
+                self.writer.update_page_form_field_values(self.page, {time_in_field: time_in})
+                self.writer.update_page_form_field_values(self.page, {time_out_field: time_out})
+
+                hours_worked_index = SheetWriter.hours_worked_indices[i]
+                hours_worked_field = f"topmostSubform[0].Page1[0].TextField1[{hours_worked_index}]"
+
+                self.writer.update_page_form_field_values(self.page, {hours_worked_field: hours_worked_str})
+
+            if j == 6:
+                total_hours_worked_index = SheetWriter.sub_totals_indices[k]
+                total_hours_worked_field = f"topmostSubform[0].Page1[0].TextField1[{total_hours_worked_index}]"
+                self.writer.update_page_form_field_values(self.page, {total_hours_worked_field: str(week_total)})
+                week_total = 0
+                j = 0
+                k = k + 1
+            else:
+                j = j + 1
+
+            total_hours_worked_index = SheetWriter.sub_totals_indices[k]
+            total_hours_worked_field = f"topmostSubform[0].Page1[0].TextField1[{total_hours_worked_index}]"
+            self.writer.update_page_form_field_values(self.page, {total_hours_worked_field: str(week_total)})
 
     def write_timesheet(self):
         self.write_last_name()
@@ -78,16 +117,16 @@ class SheetWriter:
     def output_timesheet(self, output_file_name: str):
         self.writer.write(f"timesheets/{output_file_name}")
 
-    def generate_fields(self):
-        fields = self.writer.get_fields()
+    # def generate_fields(self):
+    #     fields = self.writer.get_fields()
 
-        with open("resources/fields.txt", "w") as field_file:
-            for key in fields.keys():
-                field_file.write(key + "\n")
+    #     with open("resources/fields.txt", "w") as field_file:
+    #         for key in fields.keys():
+    #             field_file.write(key + "\n")
 
-    def view_fields_index(self):
-        start = 0
-        end = 151
+    # def view_fields_index(self):
+    #     start = 0
+    #     end = 151
 
-        for i in range(start, end):
-            self.writer.update_page_form_field_values(self.page, {f"topmostSubform[0].Page1[0].TextField1[{i}]":  i} )
+    #     for i in range(start, end):
+    #         self.writer.update_page_form_field_values(self.page, {f"topmostSubform[0].Page1[0].TextField1[{i}]":  i} )
