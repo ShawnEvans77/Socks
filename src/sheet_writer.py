@@ -9,12 +9,15 @@ class SheetWriter:
     last_name_index, first_name_index = 6, 7 # SIX SEVEN!!! :3
     pay_period_index = 5
 
-    week_one_sub_total = (74, 73)
-    week_two_sub_total = (132, 137)
-    sub_totals_indices = week_one_sub_total + week_two_sub_total
+    sub_totals_indices = ((74, 73), (132,137))
+    total_hours_index = 138
 
     week_one_date_indices = (10, 14, 18, 22, 26, 30, 34)
     week_one_time_in_out_indices = ((11, 13), (15,17), (19,21), (23, 25), (27, 29), (31, 33), (35, 37))
+
+    week_one_total_indices = (59, 60, 61, 62, 63, 64, 65)
+    week_two_total_indices = (82, 126, 127, 128, 129, 130, 131)
+    total_indices = week_one_total_indices + week_two_total_indices
 
     week_one_hours_worked = (45, 46, 47, 48, 49, 50, 51)
     week_two_hours_worked = (79, 108, 109, 110, 111, 112, 113)
@@ -24,6 +27,7 @@ class SheetWriter:
 
     time_in_out_indices = week_one_time_in_out_indices + week_two_time_in_out_indices
     date_indices = week_one_date_indices + week_two_date_indices
+    
     hours_worked_indices = week_one_hours_worked + week_two_hours_worked
 
     pay_table = pt.PayTable()
@@ -57,13 +61,10 @@ class SheetWriter:
             self.writer.update_page_form_field_values(self.page, {date_field: date_string})
 
     def write_hours(self):
-        j = 0
-
-        k = 0
-
+        j = 0 
+        k = 0 
         week_total = 0
-
-        is_week_one, is_week_two = True, False
+        total_hours = 0
 
         for i in range(len(SheetWriter.time_in_out_indices)):
 
@@ -89,23 +90,31 @@ class SheetWriter:
                 self.writer.update_page_form_field_values(self.page, {time_out_field: time_out})
 
                 hours_worked_index = SheetWriter.hours_worked_indices[i]
-                hours_worked_field = f"topmostSubform[0].Page1[0].TextField1[{hours_worked_index}]"
+                total_index = SheetWriter.total_indices[i]
 
+                hours_worked_field = f"topmostSubform[0].Page1[0].TextField1[{hours_worked_index}]"
                 self.writer.update_page_form_field_values(self.page, {hours_worked_field: hours_worked_str})
 
+                total_field = f"topmostSubform[0].Page1[0].TextField1[{total_index}]"
+                self.writer.update_page_form_field_values(self.page, {total_field: hours_worked_str})
+                
             if j == 6:
-                total_hours_worked_index = SheetWriter.sub_totals_indices[k]
-                total_hours_worked_field = f"topmostSubform[0].Page1[0].TextField1[{total_hours_worked_index}]"
-                self.writer.update_page_form_field_values(self.page, {total_hours_worked_field: str(week_total)})
+                sub_total_index = SheetWriter.sub_totals_indices[k][0]
+                sub_total_field = f"topmostSubform[0].Page1[0].TextField1[{sub_total_index}]"
+
+                self.writer.update_page_form_field_values(self.page, {sub_total_field: str(week_total)})
+
+                total_hours += week_total
+
                 week_total = 0
+
                 j = 0
                 k = k + 1
             else:
                 j = j + 1
 
-            total_hours_worked_index = SheetWriter.sub_totals_indices[k]
-            total_hours_worked_field = f"topmostSubform[0].Page1[0].TextField1[{total_hours_worked_index}]"
-            self.writer.update_page_form_field_values(self.page, {total_hours_worked_field: str(week_total)})
+        total_hours_field = f"topmostSubform[0].Page1[0].TextField1[{SheetWriter.total_hours_index}]"
+        self.writer.update_page_form_field_values(self.page, {total_hours_field: str(total_hours)})
 
     def write_timesheet(self):
         self.write_last_name()

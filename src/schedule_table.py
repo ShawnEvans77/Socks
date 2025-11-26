@@ -14,4 +14,3 @@ class ScheduleTable:
 
     def get(self, name: str) -> List[List]:
         return self.schedule_dict[name]
-    
