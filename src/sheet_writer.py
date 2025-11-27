@@ -49,11 +49,11 @@ class SheetWriter:
 
     def write_last_name(self):
         last_name_field = SheetWriter.txt_field(SheetWriter.last_name_index)
-        self.update_field(last_name_field, self.last_name)
+        self.update_field(last_name_field, self.last_name.capitalize())
 
     def write_first_name(self):
         first_name_field = SheetWriter.txt_field(SheetWriter.first_name_index)
-        self.update_field(first_name_field, self.first_name)
+        self.update_field(first_name_field, self.first_name.capitalize())
 
     def write_pay_period(self):
         pay_period_field = SheetWriter.txt_field(SheetWriter.pay_period_index)
