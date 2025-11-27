@@ -5,6 +5,9 @@ import schedule_table as st
 import clock as c
 
 class SheetWriter:
+    """The SheetWriter class is the main way Socks creates your timesheet. It has various static constants
+    that represent indices in the PDF. It uses methods like write_last_name() to write and create your sheet."""
+
     pay_table = pt.PayTable()
     schedule_table = st.ScheduleTable()
 
@@ -41,9 +44,15 @@ class SheetWriter:
 
     @staticmethod
     def txt_field(index: int) -> str:
+        """A getter method to allow us to access a text field based on index. This function call
+        will make your life easier, you don't need to write {topmost...} all the time."""
+
         return f"topmostSubform[0].Page1[0].TextField1[{index}]"
     
     def update_field(self, field: str, text: str):
+        """Writes the given text data into the given field. Method exists to make updating much easier,
+        rather than the excessively long {update_page...} function."""
+
         self.writer.update_page_form_field_values(self.page,{field: text})
 
     def write_last_name(self):

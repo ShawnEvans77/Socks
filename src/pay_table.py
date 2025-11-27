@@ -2,10 +2,12 @@ import datetime as d
 from typing import List
 
 class PayTable:
+    """The PayTable class is how we access pay period dates from an integer representing the pay period."""
 
     days_in_period = 14
 
     def __init__(self):
+
         self.pay_dict = {}
         self.invalid_dates = []
         
@@ -21,10 +23,21 @@ class PayTable:
 
     @staticmethod
     def str_to_datetime(date_str: str) -> d.datetime:
+        """Takes a string in the form MM/DD/YYYY and converts it into a datetime object."""
+
         date_parts = date_str.split('/')
         return d.datetime(month=int(date_parts[0]), day=int(date_parts[1]), year=int(date_parts[2]))
+    
+    @staticmethod
+    def date_str(date: d.datetime) -> str:
+        """Given a datetime object, return a string in the form DD/YY. Needed when filling out the 14 date fields
+        of the timesheet."""
+
+        return date.strftime("%m/%d")
 
     def get_period_dates(self, pay_period: int) -> List[d.datetime]:
+        """Returns a list of datetime objects representing the days in a given pay period."""
+
         list = []
 
         for i in range(PayTable.days_in_period):
@@ -40,10 +53,6 @@ class PayTable:
     
     def date_offset(self, pay_period: int, offset: int) -> d.datetime:
         return self.pay_dict[pay_period] + d.timedelta(days=offset)
-    
-    @staticmethod
-    def date_str(date: d.datetime) -> str:
-        return date.strftime("%m/%d")
     
     def start_date_string(self, pay_period: int) -> str:
         return PayTable.date_str(self.pay_dict[pay_period])
