@@ -5,12 +5,11 @@ import schedule_table as st
 import clock as c
 
 class SheetWriter:
-    
     last_name_index, first_name_index = 6, 7 # SIX SEVEN!!! :3
     pay_period_index = 5
 
     sub_totals_indices = ((74, 73), (132,137))
-    total_hours_index = 138
+    total_hours_index = (138, 141)
 
     week_one_date_indices = (10, 14, 18, 22, 26, 30, 34)
     week_one_time_in_out_indices = ((11, 13), (15,17), (19,21), (23, 25), (27, 29), (31, 33), (35, 37))
@@ -111,6 +110,11 @@ class SheetWriter:
 
                 self.update_field(sub_total_field, str(week_total))
 
+                sub_total_index = SheetWriter.sub_totals_indices[k][1]
+                sub_total_field = SheetWriter.txt_field(sub_total_index)
+
+                self.update_field(sub_total_field, str(week_total))
+
                 total_hours += week_total
 
                 week_total = 0
@@ -120,7 +124,10 @@ class SheetWriter:
             else:
                 j = j + 1
 
-        total_hours_field = SheetWriter.txt_field(SheetWriter.total_hours_index)
+        total_hours_field = SheetWriter.txt_field(SheetWriter.total_hours_index[0])
+        self.update_field(total_hours_field, str(total_hours))
+
+        total_hours_field = SheetWriter.txt_field(SheetWriter.total_hours_index[1])
         self.update_field(total_hours_field, str(total_hours))
 
     def write_timesheet(self):
