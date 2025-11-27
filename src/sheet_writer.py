@@ -37,6 +37,7 @@ class SheetWriter:
         self.first_name = first_name
         self.name = first_name + " " + last_name
         self.pay_period = pay_period
+        self.dates = SheetWriter.pay_table.get_period_dates(self.pay_period)
 
     @staticmethod
     def txt_field(index: int) -> str:
@@ -59,9 +60,10 @@ class SheetWriter:
         self.update_field(pay_period_field, pay_period_string)
 
     def write_dates(self):
+
         for day, day_index in enumerate(SheetWriter.date_indices):
             date_field = SheetWriter.txt_field(day_index)
-            date_string = SheetWriter.pay_table.date_offset_string(self.pay_period, day)
+            date_string = pt.PayTable.date_str(self.dates[day])
             self.update_field(date_field, date_string)
 
     def write_hours(self):
@@ -69,8 +71,11 @@ class SheetWriter:
         k = 0 
         week_total = 0
         total_hours = 0
+        invalid_dates = SheetWriter.pay_table.get_invalid_dates()
 
         for i in range(len(SheetWriter.time_in_out_indices)):
+
+            date = self.dates[i]
 
             time_in_index = SheetWriter.time_in_out_indices[i][0]
             time_out_index = SheetWriter.time_in_out_indices[i][1]
@@ -83,7 +88,7 @@ class SheetWriter:
             time_in = schedule[j][0]
             time_out = schedule[j][1]
 
-            if len(time_in) != 0:
+            if len(time_in) != 0 and date not in invalid_dates:
 
                 hours_worked_int = c.Clock(time_in) - c.Clock(time_out)
                 hours_worked_str = str(hours_worked_int)
