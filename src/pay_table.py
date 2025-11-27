@@ -13,6 +13,10 @@ class PayTable:
                 date = tokens[1].split('/')
                 self.pay_dict[pay_period] = d.datetime(month=int(date[0]), day=int(date[1]), year=int(date[2]))
 
+    def get_period_dates(self, pay_period: int):
+        pass
+        # to write: feature to get a list of dates for the given pay_period, all 14 of them. 
+
     def get(self, pay_period: int):
         return self.pay_dict[pay_period]
     
