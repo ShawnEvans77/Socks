@@ -70,6 +70,9 @@ class SheetWriter:
 
     def write_department(self):
         self.update_field(SheetWriter.txt_field(9), "Learning Center")
+        self.update_field(SheetWriter.txt_field(1), "885-01")
+        self.update_field(SheetWriter.txt_field(2), "19.12")
+        self.update_field(SheetWriter.txt_field(151), "5821")
 
     def write_dates(self):
 
