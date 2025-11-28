@@ -68,6 +68,9 @@ class SheetWriter:
         pay_period_string = f"{self.pay_period}: {SheetWriter.pay_table.start_date_string(self.pay_period)} - {SheetWriter.pay_table.end_date_string(self.pay_period)}"
         self.update_field(pay_period_field, pay_period_string)
 
+    def write_department(self):
+        self.update_field(SheetWriter.txt_field(9), "Learning Center")
+
     def write_dates(self):
 
         for day, day_index in enumerate(SheetWriter.date_indices):
@@ -146,6 +149,7 @@ class SheetWriter:
         self.write_last_name()
         self.write_first_name()
         self.write_pay_period()
+        self.write_department()
         self.write_dates()
         self.write_hours()
 
