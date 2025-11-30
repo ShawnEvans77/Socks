@@ -1,21 +1,34 @@
 import datetime as d
 from typing import List
+import sqlite3
 
 class PayTable:
     """The PayTable class is how we access pay period dates from an integer representing the pay period."""
 
     days_in_period = 14
 
+    con = sqlite3.connect("resources/database/socks.db")
+    cur = con.cursor()
+
     def __init__(self):
 
         self.pay_dict = {}
         self.invalid_dates = []
-        
-        with open("resources/text input/pay_period.txt", "r") as period_file:
-            for line in period_file:
-                tokens = line.split(',')
-                pay_period = int(tokens[0])
-                self.pay_dict[pay_period] = PayTable.str_to_datetime(tokens[1])
+
+        res = PayTable.cur.execute("SELECT pay_period, start_date from payroll_schedule;")
+
+        matrix = res.fetchall()
+
+        for tuple in matrix:
+            pay_period = int(tuple[0])
+            date = d.datetime.strptime(str(tuple[1]), "%Y-%m-%d")
+            self.pay_dict[pay_period] = date
+
+        # with open("resources/text input/pay_period.txt", "r") as period_file:
+        #     for line in period_file:
+        #         tokens = line.split(',')
+        #         pay_period = int(tokens[0])
+        #         self.pay_dict[pay_period] = PayTable.str_to_datetime(tokens[1])
 
         with open("resources/text input/invalid_dates.txt", "r") as invalid_dates_file:
             for line in invalid_dates_file:
