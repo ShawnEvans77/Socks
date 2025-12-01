@@ -56,10 +56,14 @@ def view_pay_period_start_end():
 
     matrix = cur.fetchall()
 
-    print("\n-------------------------------------")
+    print()
+
+    print("----------------------------------------")
+    print (f"| {"pay period":<8s} | {"start date"} | {"end date":<10s} |")
+    print("----------------------------------------")
     for tuple in matrix:
-        print(f"{int(tuple[0]):7d} | {tuple[1]} | {tuple[2]}")
-    print("-------------------------------------\n")
+        print(f"| {int(tuple[0]):<10d} | {tuple[1]} | {tuple[2]} |")
+    print("---------------------------------------\n")
 
 def view_invalid_dates():
     cur.execute("SELECT * FROM days_off;")
