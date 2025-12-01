@@ -1,32 +1,48 @@
-Welcome to 'socks', a tool for Learning Center tutors to automatically generate their timesheets! Are you annoyed by having to fill out a paper each time you want to collect your part-time salary? With this tool, you can generate your sheets automatically.
+# Socks 🧦
 
-You will need to install Pypdf, pip, and python for this script to work properly.
-
-```
-pip install pypdf
-```
+Socks is a Python application that automatically generates Brooklyn College part-time worker timesheets. Filling out my timesheets manually was far too ardous, so I wrote this piece of software to simplify the process.  You will need to install Pypdf, pip, and python for this script to work properly. 
 
 Usage:
 
 ```
-python3 src/main.py
+$ python3 src/main.py
 
-************************************************
-Please enter your last name: Evans
-Please enter your first name: Shawn
-Please enter the pay period: 22
-************************************************
+*********************************************************
+(🧦) Welcome to Socks (🧦)
+
+Please enter your first name: shawn
+Please enter your last name: evans
+Please enter the pay period: 21
+*********************************************************
+Shawn, your timesheet has been generated in the timesheet folder.
+
+Thank you for using (🧦) Socks (🧦)!
 ```
 
-This will generate a properly filled in timesheet, that you can either print out and sign, or sign digitally! Generated timesheets are stored in the timesheet directory with a nice file name. Development is ongoing. I have plans to make this a web app, then distribue it to departments in my school! I hope you enjoy my piece of software!
-
-Schedules can be inserted into the program at schedules.txt, which is in form:
+The application uses an SQLite based database, socks.db, stored in the resources directory. This database can be queried easily through the execution of crud.py. 
 
 ```
-name=matrix
+$ python3 src/crud.py
+
+******************************************************
+Welcome to Socks (🧦) C.R.U.D interface! What would you like to do? 
+P. Insert a new Pay Period
+I. Insert an Invalid Date
+C. View Pay Period Start & End Dates
+H. View Invalid Dates
+M. View this menu
+Q. Quit Program
+******************************************************
+Please type your selection: c
+
+----------------------------------------
+| pay period | start date | end date   |
+----------------------------------------
+| 20         | 2025-11-16 | 2025-11-29 |
+| 21         | 2025-11-30 | 2025-12-13 |
+---------------------------------------
 ```
 
-Where:
-name: is a string compromised of a first and last name, separated by a space. 
+Schedules are stored in schedules.txt, with employee names being associated with a matrix that represents their start and end times.
 
-matrix: is a matrix representing start and end times on the ith day of the week.
+```Shawn Evans=[['',''], ['12PM','3PM'], ['11AM','2PM'], ['',''], ['11AM','1PM'], ['',''], ['','']]```
