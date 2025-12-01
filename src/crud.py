@@ -14,7 +14,7 @@ def menu():
     print("M. View this menu")
     print("Q. Quit Program")
     print("******************************************************")
-    
+
 def insert_pay_period():
     print("\n-------------------------------------")
     print("STARTING: Pay Period Insertion.")
