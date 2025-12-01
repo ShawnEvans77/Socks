@@ -11,7 +11,6 @@ def main():
     pay_period = int(input("Please enter the pay period: "))
     print("*********************************************************")
 
-
     input_path = "resources/pdf input"
     input_file_name = "init.pdf"
 
@@ -22,6 +21,9 @@ def main():
     file_name = f"{last_name.capitalize()}_Timesheet_{pay_period}.pdf"
     
     sheet.output_timesheet(file_name)
+
+    print(f"{first_name.capitalize()}, your timesheet has been generated in the timesheet folder.")
+    print(f"\nThank you for using (🧦) Socks (🧦)!\n")
 
 if __name__ == '__main__':
     main()
