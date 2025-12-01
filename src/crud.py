@@ -35,6 +35,11 @@ while choice != "q":
 
             print("ENDING: Pay Period Insertion.")
             print("-------------------------------------")
+        case "i":
+            print("STARTING: Invalid Date Insertion.")
+            invalid_date = input("Please enter the invalid date you are adding to the database: ")
+
+            # todo: complete insertion of invalid date into the DATABASE.
 
     choice = input("Please type your selection: ").lower()
 
