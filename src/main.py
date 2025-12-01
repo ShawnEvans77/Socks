@@ -3,13 +3,14 @@ from pypdf import PdfWriter # type: ignore
 import os
 
 def main():
-    print("************************************************")
+    print("*********************************************************")
+    print("(🧦) Welcome to Socks (🧦)\n")
 
     first_name = input("Please enter your first name: ").lower()
     last_name = input("Please enter your last name: ").lower()
     pay_period = int(input("Please enter the pay period: "))
+    print("*********************************************************")
 
-    print("************************************************")
 
     input_path = "resources/pdf input"
     input_file_name = "init.pdf"
