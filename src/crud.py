@@ -78,7 +78,6 @@ def view_invalid_dates():
 def main():
 
     menu()
-
     running = True
 
     while running:
