@@ -23,7 +23,8 @@ def main():
     sheet.output_timesheet(file_name)
 
     print(f"{first_name.capitalize()}, your timesheet has been generated in the timesheet folder.")
-    print(f"\nThank you for using (🧦) Socks (🧦)!\n")
+    print(f"\nThank you for using (🧦) Socks (🧦)!")
+    print("*********************************************************")
 
 if __name__ == '__main__':
     main()
