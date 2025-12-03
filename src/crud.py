@@ -7,12 +7,13 @@ cur = con.cursor()
 def menu():
     print("******************************************************")
     print("Welcome to Socks (🧦) C.R.U.D interface! What would you like to do? ")
-    print("P. Insert a new Pay Period")
-    print("I. Insert an Invalid Date")
-    print("C. View Pay Period Start & End Dates")
-    print("H. View Invalid Dates")
-    print("M. View this menu")
-    print("Q. Quit Program")
+    print("1. Insert a new Pay Period")
+    print("2. Insert an Invalid Date")
+    print("3. View Pay Period Start & End Dates")
+    print("4. View Invalid Dates")
+    print("5. View this menu")
+    print("6. Delete a Pay Period")
+    print("q. Quit")
     print("******************************************************")
 
 def insert_pay_period():
@@ -59,21 +60,35 @@ def view_pay_period_start_end():
     print()
 
     print("----------------------------------------")
-    print (f"| {"pay period":<8s} | {"start date"} | {"end date":<10s} |")
+    print(f"| {"pay period":<8s} | {"start date"} | {"end date":<10s} |")
     print("----------------------------------------")
     for tuple in matrix:
         print(f"| {int(tuple[0]):<10d} | {tuple[1]} | {tuple[2]} |")
     print("---------------------------------------\n")
+
+def delete_pay_period():
+    print("\n-------------------------------------")
+    print("STARTING: Pay Period Deletion.")
+
+    pay_period = input("Please enter the pay period you would like to delete: ")
+
+    con.execute("DELETE FROM payroll_schedule WHERE pay_period = ?", (pay_period,))
+    con.commit()
+
+    print(f"Pay Period {pay_period} has been successfully removed from the database.")
+    print("-------------------------------------\n")
 
 def view_invalid_dates():
     cur.execute("SELECT * FROM days_off;")
 
     matrix = cur.fetchall()
 
-    print("\n-------------------------------------")
+    print("\n-----------------")
+    print("| invalid dates |")
+    print("-----------------")
     for tuple in matrix:
-        print(f"{str(tuple[0])}")
-    print("-------------------------------------\n")
+        print(f"|   {str(tuple[0])}  |")
+    print("-----------------\n")
 
 def main():
 
@@ -85,16 +100,18 @@ def main():
         choice = input("Please type your selection: ").lower()
 
         match choice:
-            case "p":
+            case "1":
                 insert_pay_period()
-            case "i":
+            case "2":
                 insert_invalid_date()
-            case "c":
+            case "3":
                 view_pay_period_start_end()
-            case "h":
+            case "4":
                 view_invalid_dates()
-            case "m":
+            case "5":
                 menu()
+            case "6":
+                delete_pay_period()
             case "q":
                 running = False
             case _:
