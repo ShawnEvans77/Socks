@@ -5,7 +5,7 @@ Socks is a Python application that automatically generates Brooklyn College part
 Usage:
 
 ```
-$ python3 src/main.py
+$ py src/main.py
 
 *********************************************************
 (🧦) Welcome to Socks (🧦)
@@ -22,7 +22,7 @@ Thank you for using (🧦) Socks (🧦)!
 The application uses an SQLite based database, socks.db, stored in the resources directory. This database can be queried easily through the execution of crud.py. 
 
 ```
-$ python3 src/crud.py
+$ py src/crud.py
 
 ******************************************************
 Welcome to Socks (🧦) C.R.U.D interface! What would you like to do? 
