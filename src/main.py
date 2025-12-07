@@ -1,5 +1,4 @@
 import sheet_writer as sw
-from pypdf import PdfWriter # type: ignore
 import os
 
 def main():

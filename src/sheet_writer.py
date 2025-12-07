@@ -1,4 +1,4 @@
-from pypdf import PdfReader, PdfWriter # type: ignore
+from pypdf import PdfWriter
 import pay_table as pt
 import datetime as d
 import schedule_table as st
