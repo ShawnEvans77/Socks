@@ -1,6 +1,10 @@
 class Clock:
     """A simple class that recieves Strings in the form "12PM", "3AM", etc, then turns them into objects.
-    We use this class for easily determining the amount of hours passed between two given times."""
+    We use this class for easily determining the amount of hours passed between two given times.
+    
+    Attributes
+        hour - The hour this clock object represents, stored in 24 hour format.     
+    """
 
     def __init__(self, time_str: str):
 

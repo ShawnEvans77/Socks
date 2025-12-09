@@ -3,7 +3,12 @@ from typing import List
 import sqlite3
 
 class PayTable:
-    """The PayTable class is how we access pay period dates from an integer representing the pay period."""
+    """The PayTable class is how we access pay period dates from an integer representing the pay period. 
+
+    Attributes
+        pay_dict - A dictionary that relates pay periods to their proper start date. 
+        invalid_dates - A list representing all dates where college assistants do not work.
+    """
 
     days_in_period = 14
 
