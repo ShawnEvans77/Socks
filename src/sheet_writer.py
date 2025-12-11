@@ -3,6 +3,7 @@ import pay_table as pt
 import datetime as d
 import schedule_table as st
 import clock as c
+import guide
 
 class SheetWriter:
     """The SheetWriter class is the main way Socks creates your timesheet. It has various static constants
@@ -11,28 +12,6 @@ class SheetWriter:
     pay_table = pt.PayTable()
     schedule_table = st.ScheduleTable()
 
-    last_name_index, first_name_index = 6, 7 # SIX SEVEN!!! :3
-    pay_period_index = 5
-
-    sub_totals_indices = ((74, 73), (132,137))
-    total_hours_index = (138, 141)
-
-    week_one_date_indices = (10, 14, 18, 22, 26, 30, 34)
-    week_two_date_indices = (75, 84, 85, 86, 87, 88, 89)
-    date_indices = week_one_date_indices + week_two_date_indices
-
-    week_one_time_in_out_indices = ((11, 13), (15,  17), (19,21),   (23, 25),  (27, 29),  (31, 33), (35, 37))
-    week_two_time_in_out_indices = ((76, 78), (90, 102), (91, 103), (92, 104), (93, 105), (94, 106),  (95, 107))
-    time_in_out_indices = week_one_time_in_out_indices + week_two_time_in_out_indices
-
-    week_one_total_indices = (59, 60, 61, 62, 63, 64, 65)
-    week_two_total_indices = (82, 126, 127, 128, 129, 130, 131)
-    total_indices = week_one_total_indices + week_two_total_indices
-
-    week_one_hours_worked = (45, 46, 47, 48, 49, 50, 51)
-    week_two_hours_worked = (79, 108, 109, 110, 111, 112, 113)
-    hours_worked_indices = week_one_hours_worked + week_two_hours_worked
-    
     def __init__(self, input_file_name: str, last_name: str, first_name: str, pay_period: int):
         self.writer = PdfWriter(input_file_name)
         self.page = self.writer.pages[0]
@@ -56,15 +35,15 @@ class SheetWriter:
         self.writer.update_page_form_field_values(self.page,{field: text})
 
     def write_last_name(self):
-        last_name_field = SheetWriter.txt_field(SheetWriter.last_name_index)
+        last_name_field = SheetWriter.txt_field(guide.Indices.last_name_index.value)
         self.update_field(last_name_field, self.last_name.capitalize())
 
     def write_first_name(self):
-        first_name_field = SheetWriter.txt_field(SheetWriter.first_name_index)
+        first_name_field = SheetWriter.txt_field(guide.Indices.first_name_index.value)
         self.update_field(first_name_field, self.first_name.capitalize())
 
     def write_pay_period(self):
-        pay_period_field = SheetWriter.txt_field(SheetWriter.pay_period_index)
+        pay_period_field = SheetWriter.txt_field(guide.Indices.pay_period_index.value)
         pay_period_string = f"{self.pay_period}: {SheetWriter.pay_table.start_date_string(self.pay_period)} - {SheetWriter.pay_table.end_date_string(self.pay_period)}"
         self.update_field(pay_period_field, pay_period_string)
 
@@ -76,7 +55,7 @@ class SheetWriter:
 
     def write_dates(self):
 
-        for day, day_index in enumerate(SheetWriter.date_indices):
+        for day, day_index in enumerate(guide.Indices.date_indices.value):
             date_field = SheetWriter.txt_field(day_index)
             date_string = pt.PayTable.date_str(self.dates[day])
             self.update_field(date_field, date_string)
@@ -88,12 +67,12 @@ class SheetWriter:
         total_hours = 0
         invalid_dates = SheetWriter.pay_table.get_invalid_dates()
 
-        for i in range(len(SheetWriter.time_in_out_indices)):
+        for i in range(len(guide.Indices.time_in_out_indices.value)):
 
             date = self.dates[i]
 
-            time_in_index = SheetWriter.time_in_out_indices[i][0]
-            time_out_index = SheetWriter.time_in_out_indices[i][1]
+            time_in_index = guide.Indices.time_in_out_indices.value[i][0]
+            time_out_index = guide.Indices.time_in_out_indices.value[i][1]
 
             time_in_field = SheetWriter.txt_field(time_in_index)
             time_out_field = SheetWriter.txt_field(time_out_index)
@@ -113,8 +92,8 @@ class SheetWriter:
                 self.update_field(time_in_field, time_in)
                 self.update_field(time_out_field, time_out)
 
-                hours_worked_index = SheetWriter.hours_worked_indices[i]
-                total_index = SheetWriter.total_indices[i]
+                hours_worked_index = guide.Indices.hours_worked_indices.value[i]
+                total_index = guide.Indices.total_indices.value[i]
 
                 hours_worked_field = SheetWriter.txt_field(hours_worked_index)
                 self.update_field(hours_worked_field, hours_worked_str)
@@ -123,12 +102,12 @@ class SheetWriter:
                 self.update_field(total_field, hours_worked_str)
                 
             if j == 6:
-                sub_total_index = SheetWriter.sub_totals_indices[k][0]
+                sub_total_index = guide.Indices.sub_totals_indices.value[k][0]
                 sub_total_field = SheetWriter.txt_field(sub_total_index)
 
                 self.update_field(sub_total_field, str(week_total))
 
-                sub_total_index = SheetWriter.sub_totals_indices[k][1]
+                sub_total_index = guide.Indices.sub_totals_indices.value[k][1]
                 sub_total_field = SheetWriter.txt_field(sub_total_index)
 
                 self.update_field(sub_total_field, str(week_total))
@@ -142,10 +121,10 @@ class SheetWriter:
             else:
                 j = j + 1
 
-        total_hours_field = SheetWriter.txt_field(SheetWriter.total_hours_index[0])
+        total_hours_field = SheetWriter.txt_field(guide.Indices.total_hours_index.value[0])
         self.update_field(total_hours_field, str(total_hours))
 
-        total_hours_field = SheetWriter.txt_field(SheetWriter.total_hours_index[1])
+        total_hours_field = SheetWriter.txt_field(guide.Indices.total_hours_index.value[1])
         self.update_field(total_hours_field, str(total_hours))
 
     def write_timesheet(self):
