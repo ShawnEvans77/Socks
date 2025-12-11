@@ -15,4 +15,6 @@ class ScheduleTable:
                 self.schedule_dict[name] = schedule
 
     def get(self, name: str) -> List[List]:
+        '''Recieves a person's name as input, returns their schedule.'''
+        
         return self.schedule_dict[name]
