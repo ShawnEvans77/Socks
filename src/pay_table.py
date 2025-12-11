@@ -72,6 +72,8 @@ class PayTable:
         return list
     
     def get_invalid_dates(self) -> List[d.datetime]:
+        '''Returns a list representing all days in which employees do not work.'''
+        
         return self.invalid_dates
 
     def get(self, pay_period: int):
