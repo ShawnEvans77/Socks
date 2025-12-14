@@ -4,6 +4,11 @@ class Indices(Enum):
     last_name_index, first_name_index = 6, 7 # SIX SEVEN!!! :3
     pay_period_index = 5
 
+    dept_num_index = 1
+    dept_index = 9
+    rate_index = 2
+    dept_ext_index = 151
+
     sub_totals_indices = ((74, 73), (132,137))
     total_hours_index = (138, 141)
 
@@ -22,3 +27,11 @@ class Indices(Enum):
     week_one_hours_worked = (45, 46, 47, 48, 49, 50, 51)
     week_two_hours_worked = (79, 108, 109, 110, 111, 112, 113)
     hours_worked_indices = week_one_hours_worked + week_two_hours_worked
+
+class LearningCenter(Enum):
+    lc_dept_name = 'Learning Center'
+    lc_dept_num = '885-01'
+    lc_ca_rate = '$19.12'
+    lc_dept_ext = '5821'
+
+

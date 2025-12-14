@@ -48,10 +48,25 @@ class SheetWriter:
         self.update_field(pay_period_field, pay_period_string)
 
     def write_department(self):
-        self.update_field(SheetWriter.txt_field(9), "Learning Center")
-        self.update_field(SheetWriter.txt_field(1), "885-01")
-        self.update_field(SheetWriter.txt_field(2), "19.12")
-        self.update_field(SheetWriter.txt_field(151), "5821")
+        self.update_field(SheetWriter.txt_field(guide.Indices.dept_index.value), guide.LearningCenter.lc_dept_name.value)
+
+    def write_pay(self):
+        self.update_field(SheetWriter.txt_field(guide.Indices.rate_index.value), guide.LearningCenter.lc_ca_rate.value)
+
+    def write_department_number(self):
+        self.update_field(SheetWriter.txt_field(guide.Indices.dept_num_index.value), guide.LearningCenter.lc_dept_num.value)
+
+    def write_department_extension(self):
+        self.update_field(SheetWriter.txt_field(guide.Indices.dept_ext_index.value), guide.LearningCenter.lc_dept_ext.value)
+
+    def fill_top_section(self):
+        self.write_last_name()
+        self.write_first_name()
+        self.write_pay_period()
+        self.write_department()
+        self.write_pay()
+        self.write_department_number()
+        self.write_department_extension()
 
     def write_dates(self):
 
@@ -128,10 +143,7 @@ class SheetWriter:
         self.update_field(total_hours_field, str(total_hours))
 
     def write_timesheet(self):
-        self.write_last_name()
-        self.write_first_name()
-        self.write_pay_period()
-        self.write_department()
+        self.fill_top_section()
         self.write_dates()
         self.write_hours()
 
