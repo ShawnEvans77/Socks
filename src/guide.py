@@ -33,5 +33,3 @@ class LearningCenter(Enum):
     lc_dept_num = '885-01'
     lc_ca_rate = '$19.12'
     lc_dept_ext = '5821'
-
-
