@@ -35,10 +35,12 @@ class SheetWriter:
         self.writer.update_page_form_field_values(self.page,{field: text})
 
     def write_last_name(self):
+
         last_name_field = SheetWriter.txt_field(guide.Indices.last_name_index.value)
         self.update_field(last_name_field, self.last_name.capitalize())
 
     def write_first_name(self):
+
         first_name_field = SheetWriter.txt_field(guide.Indices.first_name_index.value)
         self.update_field(first_name_field, self.first_name.capitalize())
 
