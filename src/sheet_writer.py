@@ -35,24 +35,29 @@ class SheetWriter:
         self.writer.update_page_form_field_values(self.page,{field: text})
 
     def write_last_name(self):
+        '''Writes the person's last name to time the time sheet.'''
 
         last_name_field = SheetWriter.txt_field(guide.Indices.last_name_index.value)
         self.update_field(last_name_field, self.last_name.capitalize())
 
     def write_first_name(self):
+        '''Write this person's first name to the time sheet.'''
 
         first_name_field = SheetWriter.txt_field(guide.Indices.first_name_index.value)
         self.update_field(first_name_field, self.first_name.capitalize())
 
     def write_pay_period(self):
+        '''Writes the pay period to itme the time sheet.'''
         pay_period_field = SheetWriter.txt_field(guide.Indices.pay_period_index.value)
         pay_period_string = f"{self.pay_period}: {SheetWriter.pay_table.start_date_string(self.pay_period)} - {SheetWriter.pay_table.end_date_string(self.pay_period)}"
         self.update_field(pay_period_field, pay_period_string)
 
     def write_department(self):
+        '''Writes the person's department to the time sheet.'''
         self.update_field(SheetWriter.txt_field(guide.Indices.dept_index.value), guide.LearningCenter.lc_dept_name.value)
 
     def write_pay(self):
+        '''Writes the pay rate to the timesheet.'''
         self.update_field(SheetWriter.txt_field(guide.Indices.rate_index.value), guide.LearningCenter.lc_ca_rate.value)
 
     def write_department_number(self):
@@ -62,6 +67,7 @@ class SheetWriter:
         self.update_field(SheetWriter.txt_field(guide.Indices.dept_ext_index.value), guide.LearningCenter.lc_dept_ext.value)
 
     def fill_top_section(self):
+        '''Fills all 'boilerplate' of the timesheet.'''
         self.write_last_name()
         self.write_first_name()
         self.write_pay_period()
@@ -71,6 +77,7 @@ class SheetWriter:
         self.write_department_extension()
 
     def write_dates(self):
+        '''Writes all fourteen days of the current pay period to the timesheet.'''
 
         for day, day_index in enumerate(guide.Indices.date_indices.value):
             date_field = SheetWriter.txt_field(day_index)
@@ -78,6 +85,8 @@ class SheetWriter:
             self.update_field(date_field, date_string)
 
     def write_hours(self):
+        '''Writes all hours the person worked for both weeks in the timesheet.'''
+
         j = 0 
         k = 0 
         week_total = 0
@@ -150,6 +159,7 @@ class SheetWriter:
         self.write_hours()
 
     def output_timesheet(self, output_file_name: str):
+        '''Creates a file with the timesheet stored in PDF form.'''
         self.writer.write(f"timesheets/{output_file_name}")
 
     def generate_fields(self):
