@@ -2,7 +2,7 @@
 
 Socks is a Python application that automatically generates Brooklyn College part-time worker timesheets. Filling out my timesheets manually was far too ardous, so I wrote this piece of software to simplify the process.  You will need to install Pypdf, pip, and python for this script to work properly. 
 
-Usage:
+## Usage
 
 ```
 $ py src/main.py
