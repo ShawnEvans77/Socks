@@ -35,18 +35,6 @@ class PayTable:
         for tuple in matrix:
             self.invalid_dates.append(d.datetime.strptime(str(tuple[0]), "%Y-%m-%d"))
 
-        # # create pay-table using a .txt file
-
-        # with open("resources/text input/pay_period.txt", "r") as period_file:
-        #     for line in period_file:
-        #         tokens = line.split(',')
-        #         pay_period = int(tokens[0])
-        #         self.pay_dict[pay_period] = PayTable.str_to_datetime(tokens[1])
-
-        # with open("resources/text input/invalid_dates.txt", "r") as invalid_dates_file:
-        #     for line in invalid_dates_file:
-        #         self.invalid_dates.append(self.str_to_datetime(line))
-
     @staticmethod
     def str_to_datetime(date_str: str) -> d.datetime:
         """Takes a string in the form MM/DD/YYYY and converts it into a datetime object."""
