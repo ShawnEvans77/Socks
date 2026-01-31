@@ -20,7 +20,6 @@ class PayTable:
         self.pay_dict = {}
         self.invalid_dates = []
 
-        # create pay-table using databases
         res = PayTable.cur.execute("SELECT pay_period, start_date FROM payroll_schedule;")
         matrix = res.fetchall()
 
