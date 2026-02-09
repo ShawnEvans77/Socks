@@ -154,15 +154,20 @@ class SheetWriter:
         self.update_field(total_hours_field, str(total_hours))
 
     def write_timesheet(self):
+        '''Writes the top part of the timesheet, the dates, and the hours, completing the time sheet.'''
+        
         self.fill_top_section()
         self.write_dates()
         self.write_hours()
 
     def output_timesheet(self, output_file_name: str):
         '''Creates a file with the timesheet stored in PDF form.'''
+
         self.writer.write(f"timesheets/{output_file_name}")
 
     def generate_fields(self):
+        '''Helper method to list all fields.'''
+
         fields = self.writer.get_fields()
 
         with open("resources/fields.txt", "w") as field_file:
@@ -170,6 +175,8 @@ class SheetWriter:
                 field_file.write(key + "\n")
 
     def view_fields_index(self):
+        '''Helper method that populates a timesheet with indexes.'''
+
         start = 0
         end = 151
 
