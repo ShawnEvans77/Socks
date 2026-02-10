@@ -21,6 +21,19 @@ class SheetWriter:
         self.pay_period = pay_period
         self.dates = SheetWriter.pay_table.get_period_dates(self.pay_period)
 
+    def write_timesheet(self):
+        '''Writes all needed information on the timesheet.'''
+
+        self.write_last_name()
+        self.write_first_name()
+        self.write_pay_period()
+        self.write_department()
+        self.write_pay()
+        self.write_department_number()
+        self.write_department_extension()
+        self.write_dates()
+        self.write_hours()
+
     @staticmethod
     def txt_field(index: int) -> str:
         """A getter method to allow us to access a text field based on index. This function call
@@ -54,27 +67,23 @@ class SheetWriter:
 
     def write_department(self):
         '''Writes the person's department to the time sheet.'''
+
         self.update_field(SheetWriter.txt_field(guide.Indices.dept_index.value), guide.LearningCenter.lc_dept_name.value)
 
     def write_pay(self):
         '''Writes the pay rate to the timesheet.'''
+
         self.update_field(SheetWriter.txt_field(guide.Indices.rate_index.value), guide.LearningCenter.lc_ca_rate.value)
 
     def write_department_number(self):
+        '''Writes the Department Number to the timesheet.'''
+
         self.update_field(SheetWriter.txt_field(guide.Indices.dept_num_index.value), guide.LearningCenter.lc_dept_num.value)
 
     def write_department_extension(self):
-        self.update_field(SheetWriter.txt_field(guide.Indices.dept_ext_index.value), guide.LearningCenter.lc_dept_ext.value)
+        '''Writes the Department Extension to the timesheet.'''
 
-    def fill_top_section(self):
-        '''Fills all 'boilerplate' of the timesheet.'''
-        self.write_last_name()
-        self.write_first_name()
-        self.write_pay_period()
-        self.write_department()
-        self.write_pay()
-        self.write_department_number()
-        self.write_department_extension()
+        self.update_field(SheetWriter.txt_field(guide.Indices.dept_ext_index.value), guide.LearningCenter.lc_dept_ext.value)
 
     def write_dates(self):
         '''Writes all fourteen days of the current pay period to the timesheet.'''
@@ -153,32 +162,7 @@ class SheetWriter:
         total_hours_field = SheetWriter.txt_field(guide.Indices.total_hours_index.value[1])
         self.update_field(total_hours_field, str(total_hours))
 
-    def write_timesheet(self):
-        '''Writes the top part of the timesheet, the dates, and the hours, completing the time sheet.'''
-        
-        self.fill_top_section()
-        self.write_dates()
-        self.write_hours()
-
     def output_timesheet(self, output_file_name: str):
         '''Creates a file with the timesheet stored in PDF form.'''
 
         self.writer.write(f"timesheets/{output_file_name}")
-
-    def generate_fields(self):
-        '''Helper method to list all fields.'''
-
-        fields = self.writer.get_fields()
-
-        with open("resources/fields.txt", "w") as field_file:
-            for key in fields.keys():
-                field_file.write(key + "\n")
-
-    def view_fields_index(self):
-        '''Helper method that populates a timesheet with indexes.'''
-
-        start = 0
-        end = 151
-
-        for i in range(start, end):
-            self.writer.update_page_form_field_values(self.page, {f"topmostSubform[0].Page1[0].TextField1[{i}]":  i} )
