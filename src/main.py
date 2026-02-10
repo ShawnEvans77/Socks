@@ -1,5 +1,6 @@
 import sheet_writer as sw
 import os
+import guide
 
 def main():
     print("*********************************************************")
@@ -7,7 +8,24 @@ def main():
 
     first_name = input("Please enter your first name: ").lower()
     last_name = input("Please enter your last name: ").lower()
-    pay_period = int(input("Please enter the pay period: "))
+
+    while not guide.Tables.schedule_table.value.has_name(f"{first_name} {last_name}"):
+        print(f"ERROR: Socks currently has no employee called {first_name.title()} {last_name.title()}. Try again.")
+        first_name = input("Please enter your first name: ").lower()
+        last_name = input("Please enter your last name: ").lower()
+
+    pay_period = input("Please enter the pay period: ")
+
+    while not pay_period.isnumeric():
+        print("ERROR: Pay Period must be a number. Try again.")
+        pay_period = input("Please enter the pay period: ")
+
+    while not guide.Tables.pay_table.value.has_pay_period(pay_period):
+        print(f"ERROR: Socks currently has no pay period {pay_period}. Try again.")
+        pay_period = input("Please enter the pay period: ")
+
+    pay_period = int(pay_period)
+
     print("*********************************************************")
 
     input_path = "resources/pdf input"

@@ -1,16 +1,11 @@
 from pypdf import PdfWriter
-import pay_table as pt
 import datetime as d
-import schedule_table as st
 import clock as c
 import guide
 
 class SheetWriter:
     """The SheetWriter class is the main way Socks creates your timesheet. It has various static constants
     that represent indices in the PDF. It uses methods like write_last_name() to write and create your sheet."""
-
-    pay_table = pt.PayTable()
-    schedule_table = st.ScheduleTable()
 
     def __init__(self, input_file_name: str, last_name: str, first_name: str, pay_period: int):
         self.writer = PdfWriter(input_file_name)
@@ -19,7 +14,7 @@ class SheetWriter:
         self.first_name = first_name
         self.name = first_name + " " + last_name
         self.pay_period = pay_period
-        self.dates = SheetWriter.pay_table.get_period_dates(self.pay_period)
+        self.dates = guide.Tables.pay_table.value.get_period_dates(self.pay_period)
 
     def write_timesheet(self):
         '''Writes all needed information on the timesheet.'''
@@ -62,7 +57,7 @@ class SheetWriter:
     def write_pay_period(self):
         '''Writes the pay period to itme the time sheet.'''
         pay_period_field = SheetWriter.txt_field(guide.Indices.pay_period_index.value)
-        pay_period_string = f"{self.pay_period}: {SheetWriter.pay_table.start_date_string(self.pay_period)} - {SheetWriter.pay_table.end_date_string(self.pay_period)}"
+        pay_period_string = f"{self.pay_period}: {guide.Tables.pay_table.value.start_date_string(self.pay_period)} - {guide.Tables.pay_table.value.end_date_string(self.pay_period)}"
         self.update_field(pay_period_field, pay_period_string)
 
     def write_department(self):
@@ -90,7 +85,7 @@ class SheetWriter:
 
         for day, day_index in enumerate(guide.Indices.date_indices.value):
             date_field = SheetWriter.txt_field(day_index)
-            date_string = pt.PayTable.date_str(self.dates[day])
+            date_string = guide.Tables.pay_table.value.date_str(self.dates[day])
             self.update_field(date_field, date_string)
 
     def write_hours(self):
@@ -100,7 +95,7 @@ class SheetWriter:
         k = 0 
         week_total = 0
         total_hours = 0
-        invalid_dates = SheetWriter.pay_table.get_invalid_dates()
+        invalid_dates = guide.Tables.pay_table.value.get_invalid_dates()
 
         for i in range(len(guide.Indices.time_in_out_indices.value)):
 
@@ -112,7 +107,7 @@ class SheetWriter:
             time_in_field = SheetWriter.txt_field(time_in_index)
             time_out_field = SheetWriter.txt_field(time_out_index)
 
-            schedule = SheetWriter.schedule_table.get(self.name)
+            schedule = guide.Tables.schedule_table.value.get(self.name)
 
             time_in = schedule[j][0]
             time_out = schedule[j][1]
