@@ -87,3 +87,8 @@ class PayTable:
         '''Given a pay period, add an offset number of days to its start date, then return it as a string.'''
 
         return PayTable.date_str(self.date_offset(pay_period, offset))
+    
+    def has_pay_period(self, pay_period: str):
+        '''Returns whether or not this pay period exists.'''
+        
+        return int(pay_period) in self.pay_dict.keys()

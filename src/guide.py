@@ -1,4 +1,6 @@
 from enum import Enum
+import pay_table as pt
+import schedule_table as st
 
 class Indices(Enum):
     last_name_index, first_name_index = 6, 7 # SIX SEVEN!!! :3
@@ -33,3 +35,7 @@ class LearningCenter(Enum):
     lc_dept_num = '885-01'
     lc_ca_rate = '$19.12'
     lc_dept_ext = '5821'
+
+class Tables(Enum):
+    pay_table = pt.PayTable()
+    schedule_table = st.ScheduleTable()

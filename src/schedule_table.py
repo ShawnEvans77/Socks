@@ -31,3 +31,8 @@ class ScheduleTable:
         '''Recieves a person's name as input, returns their schedule.'''
         
         return self.schedule_dict[name]
+    
+    def has_name(self, name: str) -> bool:
+        '''Returns if this person's name exists in the schedule table.'''
+
+        return name in self.schedule_dict.keys()
