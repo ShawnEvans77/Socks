@@ -1,5 +1,5 @@
 from typing import List
-import ast
+import json
 
 class ScheduleTable:
     """The ScheduleTable takes schedule data from a file and converts it into an easy to use dictionary.
@@ -8,10 +8,23 @@ class ScheduleTable:
     def __init__(self):
         self.schedule_dict = {}
 
-        with open("resources/text input/schedules.txt", "r") as file:
-            for line in file:
-                tokens = line.split("=")
-                name, schedule = str(tokens[0]).lower(), ast.literal_eval(tokens[1])
+        with open("resources/text input/schedules.json", "r") as file:
+            data = json.load(file)
+
+            employees = data['employees']
+
+            for employee in employees:
+
+                name = employee['name'].lower()
+                portions = employee['schedule'].values()
+                schedule = []
+
+                for portion in portions:
+                    start_end = [""] * 2
+                    start_end[0], start_end[1] = portion[0], portion[1]
+
+                    schedule.append(start_end)
+
                 self.schedule_dict[name] = schedule
 
     def get(self, name: str) -> List[List]:

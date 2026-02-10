@@ -1,0 +1,34 @@
+{
+
+    "employees": [
+
+        {  
+            "name": "Shawn Evans",
+            "schedule": {
+                "sunday": ["", ""],
+                "monday": ["1PM", "4PM"],
+                "tuesday": ["", ""],
+                "wednesday": ["12PM", "2PM"],
+                "thursday": ["3PM", "6PM"],
+                "friday": ["",""],
+                "saturday": ["",""]
+            }
+            
+        },
+
+        {     
+            "name": "Amara Auguste",
+            "schedule": {
+                "sunday": ["", ""],
+                "monday": ["11AM", "1PM"],
+                "tuesday": ["11AM", "1PM"],
+                "wednesday": ["10AM", "12PM"],
+                "thursday": ["11AM", "1PM"],
+                "friday": ["",""],
+                "saturday": ["",""]
+            }  
+        }
+
+    ]
+  
+}
