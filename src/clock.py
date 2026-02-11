@@ -14,7 +14,11 @@ class Clock:
             case "AM": self.hour = 0 if hour_int == 12 else hour_int
 
     def __sub__(self, other) -> int:
+        '''Magic Method for finding difference between two times.'''
+
         return other.hour - self.hour
     
     def __str__(self) -> str:
+        '''Magic Method for printing a time.'''
+        
         return str(self.hour)

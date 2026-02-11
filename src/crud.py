@@ -1,8 +1,8 @@
 import sqlite3
 import datetime as d
-import re
+import re, filenames
 
-con = sqlite3.connect("resources/database/socks.db")
+con = sqlite3.connect(f"{filenames.asset_folder}/{filenames.database_folder}/{filenames.database_name}")
 cur = con.cursor()
 
 def menu():
