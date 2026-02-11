@@ -56,6 +56,7 @@ class SheetWriter:
 
     def write_pay_period(self):
         '''Writes the pay period to itme the time sheet.'''
+        
         pay_period_field = SheetWriter.txt_field(guide.Indices.pay_period_index.value)
         pay_period_string = f"{self.pay_period}: {guide.Tables.pay_table.value.start_date_string(self.pay_period)} - {guide.Tables.pay_table.value.end_date_string(self.pay_period)}"
         self.update_field(pay_period_field, pay_period_string)
