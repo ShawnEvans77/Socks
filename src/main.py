@@ -1,6 +1,6 @@
 import sheet_writer as sw
-import os
 import guide
+import filenames
 
 def main():
     print("*********************************************************")
@@ -28,8 +28,8 @@ def main():
 
     print("*********************************************************")
 
-    input_path = "resources/pdf input"
-    input_file_name = "init.pdf"
+    input_path = f"{filenames.asset_folder}/{filenames.pdf_input_folder}"
+    input_file_name = f"{filenames.starting_pdf}"
 
     sheet = sw.SheetWriter(f"{input_path}/{input_file_name}", last_name, first_name, pay_period)
 

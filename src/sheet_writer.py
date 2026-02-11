@@ -1,7 +1,7 @@
 from pypdf import PdfWriter
 import datetime as d
 import clock as c
-import guide
+import guide, filenames
 
 class SheetWriter:
     """The SheetWriter class is the main way Socks creates your timesheet. It has various static constants
@@ -160,4 +160,4 @@ class SheetWriter:
     def output_timesheet(self, output_file_name: str):
         '''Creates a file with the timesheet stored in PDF form.'''
 
-        self.writer.write(f"timesheets/{output_file_name}")
+        self.writer.write(f"{filenames.output_folder}/{output_file_name}")

@@ -39,3 +39,6 @@ class LearningCenter(Enum):
 class Tables(Enum):
     pay_table = pt.PayTable()
     schedule_table = st.ScheduleTable()
+
+class WeekLength(Enum):
+    days_in_period = 14

@@ -1,6 +1,6 @@
 import datetime as d
 from typing import List
-import sqlite3
+import sqlite3, filenames, guide
 
 class PayTable:
     """The PayTable class is how we access pay period dates from an integer representing the pay period. 
@@ -10,17 +10,13 @@ class PayTable:
         invalid_dates - A list representing all dates where college assistants do not work.
     """
 
-    days_in_period = 14
-
-    con = sqlite3.connect("resources/database/socks.db")
-    cur = con.cursor()
-
     def __init__(self):
-
+        self.con = sqlite3.connect(f"{filenames.asset_folder}/{filenames.database_folder}/{filenames.database_name}")
+        self.cur = self.con.cursor()
         self.pay_dict = {}
         self.invalid_dates = []
 
-        res = PayTable.cur.execute("SELECT pay_period, start_date FROM payroll_schedule;")
+        res = self.cur.execute("SELECT pay_period, start_date FROM payroll_schedule;")
         matrix = res.fetchall()
 
         for tuple in matrix:
@@ -28,7 +24,7 @@ class PayTable:
             date = d.datetime.strptime(str(tuple[1]), "%Y-%m-%d")
             self.pay_dict[pay_period] = date
 
-        res = PayTable.cur.execute("SELECT * FROM days_off;")
+        res = self.cur.execute("SELECT * FROM days_off;")
         matrix = res.fetchall()
 
         for tuple in matrix:
@@ -53,7 +49,7 @@ class PayTable:
 
         list = []
 
-        for i in range(PayTable.days_in_period):
+        for i in range(guide.WeekLength.days_in_period.value):
             list.append(self.date_offset(pay_period, i))
 
         return list

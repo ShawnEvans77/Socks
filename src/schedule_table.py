@@ -1,5 +1,5 @@
 from typing import List
-import json
+import json, filenames
 
 class ScheduleTable:
     """The ScheduleTable takes schedule data from a file and converts it into an easy to use dictionary.
@@ -8,7 +8,7 @@ class ScheduleTable:
     def __init__(self):
         self.schedule_dict = {}
 
-        with open("resources/text input/schedules.json", "r") as file:
+        with open(f"{filenames.asset_folder}/{filenames.text_folder}/schedules.json", "r") as file:
             data = json.load(file)
 
             employees = data['employees']
