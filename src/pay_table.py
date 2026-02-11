@@ -88,7 +88,7 @@ class PayTable:
 
         return PayTable.date_str(self.date_offset(pay_period, offset))
     
-    def has_pay_period(self, pay_period: str):
+    def has_pay_period(self, pay_period: str) -> bool:
         '''Returns whether or not this pay period exists.'''
         
         return int(pay_period) in self.pay_dict.keys()
