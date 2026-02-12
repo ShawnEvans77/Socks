@@ -91,6 +91,10 @@ def delete_pay_period():
 
     pay_period = input("Please enter the pay period you would like to delete: ")
 
+    while not pay_period.isnumeric():
+        print("ERROR: Pay Period must be numeric. Try again.")
+        pay_period = input("Please enter the pay period you would like to delete: ")
+
     con.execute("DELETE FROM payroll_schedule WHERE pay_period = ?", (pay_period,))
     con.commit()
 
