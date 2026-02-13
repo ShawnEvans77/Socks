@@ -1,5 +1,5 @@
-from typing import List
 import json, filenames
+from typing import List
 
 class ScheduleTable:
     """The ScheduleTable takes schedule data from a file and converts it into an easy to use dictionary.

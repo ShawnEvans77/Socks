@@ -1,7 +1,5 @@
+import datetime as d, clock as c, guide, filenames
 from pypdf import PdfWriter
-import datetime as d
-import clock as c
-import guide, filenames
 
 class SheetWriter:
     """The SheetWriter class is the main way Socks creates your timesheet. It has various static constants
