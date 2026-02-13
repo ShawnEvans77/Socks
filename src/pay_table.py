@@ -15,13 +15,13 @@ class PayTable:
         self.pay_dict = {}
         self.invalid_dates = []
 
-        res = self.cur.execute("SELECT pay_period, start_date FROM payroll_schedule;")
+        res = self.cur.execute("SELECT pay_period, start_date, end_date FROM payroll_schedule;")
         matrix = res.fetchall()
 
         for tuple in matrix:
             pay_period = int(tuple[0])
-            date = d.datetime.strptime(str(tuple[1]), "%Y-%m-%d")
-            self.pay_dict[pay_period] = date
+            start, end = d.datetime.strptime(str(tuple[1]), "%Y-%m-%d"), d.datetime.strptime(str(tuple[2]), "%Y-%m-%d")
+            self.pay_dict[pay_period] = (start, end)
 
         res = self.cur.execute("SELECT * FROM days_off;")
         matrix = res.fetchall()
@@ -58,25 +58,30 @@ class PayTable:
         
         return self.invalid_dates
 
-    def get(self, pay_period: int):
+    def get_start(self, pay_period: int) -> d.datetime:
         '''Returns a datetime object representing the start of the input pay_period.'''
 
-        return self.pay_dict[pay_period]
+        return self.pay_dict[pay_period][0]
+    
+    def get_end(self, pay_period: int) -> d.datetime:
+        '''Returns a datetime object representing the start of the input pay_period.'''
+
+        return self.pay_dict[pay_period][1]
     
     def date_offset(self, pay_period: int, offset: int) -> d.datetime:
         '''Given a pay period, add an 'offset' number of days to its start date.'''
 
-        return self.pay_dict[pay_period] + d.timedelta(days=offset)
+        return self.pay_dict[pay_period][0] + d.timedelta(days=offset)
     
     def start_date_string(self, pay_period: int) -> str:
         '''Given a pay_period, return a string representing the start date.'''
 
-        return PayTable.date_str(self.pay_dict[pay_period])
+        return PayTable.date_str(self.pay_dict[pay_period][0])
    
     def end_date_string(self, pay_period: int) -> str:
         '''Given a pay_period, return its conclusion as a string.'''
 
-        return PayTable.date_str(self.pay_dict[pay_period] + d.timedelta(days=13))
+        return PayTable.date_str(self.pay_dict[pay_period][1])
     
     def date_offset_string(self, pay_period: int, offset: int) -> str:
         '''Given a pay period, add an offset number of days to its start date, then return it as a string.'''
