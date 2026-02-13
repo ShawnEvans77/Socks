@@ -1,6 +1,6 @@
 import sheet_writer, guide, filenames, datetime
 
-def retrieve_pay_period(pay_dict):
+def retrieve_pay_period(pay_dict: dict) -> str:
     now = datetime.datetime.now()
     items = pay_dict.items()
 
