@@ -1,6 +1,5 @@
+import pay_table as pt, schedule_table as st
 from enum import Enum
-import pay_table as pt
-import schedule_table as st
 
 class Indices(Enum):
     last_name_index, first_name_index = 6, 7 # SIX SEVEN!!! :3

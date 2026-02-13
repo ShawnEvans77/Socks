@@ -8,7 +8,7 @@ asset_folder = "resources"
 database_folder = "database"
 
 # text folder
-text_folder = "text input"
+text_folder = "json"
 
 # database name
 database_name = "socks.db"

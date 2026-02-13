@@ -1,6 +1,4 @@
-import sheet_writer as sw
-import guide
-import filenames
+import sheet_writer, guide, filenames
 
 def main():
     print("*********************************************************")
@@ -31,7 +29,7 @@ def main():
     input_path = f"{filenames.asset_folder}/{filenames.pdf_input_folder}"
     input_file_name = f"{filenames.starting_pdf}"
 
-    sheet = sw.SheetWriter(f"{input_path}/{input_file_name}", last_name, first_name, pay_period)
+    sheet = sheet_writer.SheetWriter(f"{input_path}/{input_file_name}", last_name, first_name, pay_period)
 
     sheet.write_timesheet()
 
