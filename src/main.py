@@ -14,19 +14,19 @@ def main():
     print("*********************************************************")
     print("(🧦) Welcome to Socks (🧦)\n")
 
-    first_name = input("Please enter your first name: ").lower()
-    last_name = input("Please enter your last name: ").lower()
+    first_name = input("Please enter your first name: ").lower().strip()
+    last_name = input("Please enter your last name: ").lower().strip()
 
     while not guide.Tables.schedule_table.value.has_name(f"{first_name} {last_name}"):
         print(f"ERROR: Socks currently has no employee called {first_name.title()} {last_name.title()}. Try again.")
         first_name = input("Please enter your first name: ").lower()
         last_name = input("Please enter your last name: ").lower()
 
-    choice = input("Do you want to select the pay period based on the system time? (y/n): ").lower()
+    choice = input("Do you want to select the pay period based on the system time? (y/n): ").lower().strip()
 
     while choice != "y" and choice != "n":
         print("ERROR: Choice must be y or n.")
-        choice = input("Do you want to select the pay period based on the system time? (y/n): ").lower()
+        choice = input("Do you want to select the pay period based on the system time? (y/n): ").lower().strip()
 
     if choice == "y":
         if pay_period := retrieve_pay_period(guide.Tables.pay_table.value.get_pay_dict()):
@@ -37,15 +37,15 @@ def main():
 
     if choice == "n" or not pay_period:
 
-        pay_period = input("Please enter the pay period: ")
+        pay_period = input("Please enter the pay period: ").strip()
 
         while not pay_period.isnumeric():
             print("ERROR: Pay Period must be a number. Try again.")
-            pay_period = input("Please enter the pay period: ")
+            pay_period = input("Please enter the pay period: ").strip()
 
         while not guide.Tables.pay_table.value.has_pay_period(pay_period):
             print(f"ERROR: Socks currently has no pay period {pay_period}. Try again.")
-            pay_period = input("Please enter the pay period: ")
+            pay_period = input("Please enter the pay period: ").strip()
 
         pay_period = int(pay_period)
 
