@@ -1,6 +1,6 @@
 # Socks 🧦
 
-Socks is a Python application that automatically generates Brooklyn College part-time worker timesheets.
+Socks is a command line application that automatically generates Brooklyn College part-time worker timesheets.
 
 ## Installation
 ```
