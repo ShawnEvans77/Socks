@@ -1,6 +1,13 @@
 # Socks 🧦
 
-Socks is a Python application that automatically generates Brooklyn College part-time worker timesheets. Filling out my timesheets manually was far too ardous, so I wrote this piece of software to simplify the process.  You will need to install Pypdf, pip, and python for this script to work properly. 
+Socks is a Python application that automatically generates Brooklyn College part-time worker timesheets.
+
+## Installation
+```
+git clone https://github.com/ShawnEvans77/Socks
+
+pip install -r requirements.txt
+```
 
 ## Usage
 
@@ -43,6 +50,26 @@ Please type your selection: c
 ---------------------------------------
 ```
 
-Schedules are stored in schedules.txt, with employee names being associated with a matrix that represents their start and end times.
+Schedules are stored in schedules.json.
 
-```Shawn Evans=[['',''], ['12PM','3PM'], ['11AM','2PM'], ['',''], ['11AM','1PM'], ['',''], ['','']]```
+```
+{
+    "employees": [
+        {  
+            "name": "Shawn Evans",
+            "schedule": {
+                "sunday": ["", ""],
+                "monday": ["1PM", "4PM"],
+                "tuesday": ["", ""],
+                "wednesday": ["12PM", "2PM"],
+                "thursday": ["3PM", "6PM"],
+                "friday": ["",""],
+                "saturday": ["",""]
+            }  
+        }
+    ]
+}
+```
+
+## Motivation
+Filling out my timesheets manually and remembering pay period dates was tough, so I built this application to simplify the process.
