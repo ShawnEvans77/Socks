@@ -57,6 +57,11 @@ class PayTable:
         '''Returns a list representing all days in which employees do not work.'''
         
         return self.invalid_dates
+    
+    def get_pay_dict(self) -> dict:
+        '''Returns the dictionary mapping pay periods to their appropiate dates.'''
+
+        return self.pay_dict
 
     def get_start(self, pay_period: int) -> d.datetime:
         '''Returns a datetime object representing the start of the input pay_period.'''
