@@ -24,10 +24,6 @@ def insert_pay_period():
         print("ERROR: Pay Periods must be numeric. Try again.")
         pay_period = input("Enter the pay period you are adding: ")
 
-    if not 1 <= int(pay_period) <= 26:
-        print("ERROR: Brooklyn College only has pay periods 1 to 26. Try again.")
-        pay_period = input("Enter the pay period you are adding: ")
-
     start_str = input("When does this pay period start? MM/DD/YYYY format only: ")
 
     pattern = "(0?[1-9]|1[012])\\/(0?[1-9]|[12][0-9]|3[01])\\/((19|20)\\d\\d)"
