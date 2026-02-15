@@ -1,5 +1,8 @@
 import sheet_writer, guide, filenames, datetime
 
+def valid_period(pay_period: str) -> bool:
+    return pay_period.isnumeric() and 1 <= int(pay_period) <= 26 and guide.Tables.pay_table.value.has_pay_period(pay_period)
+
 def retrieve_pay_period(pay_dict: dict) -> str:
     now = datetime.datetime.now()
     items = pay_dict.items()
@@ -39,13 +42,22 @@ def main():
 
         pay_period = input("Please enter the pay period: ").strip()
 
-        while not pay_period.isnumeric():
-            print("ERROR: Pay Period must be a number. Try again.")
-            pay_period = input("Please enter the pay period: ").strip()
+        while not valid_period(pay_period):
 
-        while not guide.Tables.pay_table.value.has_pay_period(pay_period):
-            print(f"ERROR: Socks currently has no pay period {pay_period}. Try again.")
-            pay_period = input("Please enter the pay period: ").strip()
+            if not pay_period.isnumeric():
+                print("ERROR: Pay Period must be a number. Try again.")
+                pay_period = input("Please enter the pay period: ").strip()
+                continue
+
+            if not 1 <= int(pay_period) <= 26:
+                print("ERROR: Pay Period must be between 1 and 26. Try again.")
+                pay_period = input("Please enter the pay period: ").strip()
+                continue
+
+            if not guide.Tables.pay_table.value.has_pay_period(pay_period):
+                print(f"ERROR: Socks currently has no pay period {pay_period}. Try again.")
+                pay_period = input("Please enter the pay period: ").strip()
+                continue
 
         pay_period = int(pay_period)
 

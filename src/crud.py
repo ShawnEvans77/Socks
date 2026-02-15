@@ -15,14 +15,29 @@ def menu():
     print("q. Quit")
     print("******************************************************")
 
+def insertable_period(pay_period: str) -> bool:
+    return pay_period.isnumeric() and 1 <= int(pay_period) <= 26
+
+def fetch_period(prompt: str) -> str:
+
+    pay_period = input(prompt).strip()
+
+    while not insertable_period(pay_period):
+
+        if not pay_period.isnumeric():
+            print("ERROR: Pay Period must be a number. Try again.")
+            pay_period = input(prompt).strip()
+            continue
+
+        if not 1 <= int(pay_period) <= 26:
+            print("ERROR: Pay Period must be between 1 and 26. Try again.")
+            pay_period = input(prompt).strip()
+            continue
+
 def insert_pay_period():
     print("\n-------------------------------------")
     print("STARTING: Pay Period Insertion.")
-    pay_period = input("Enter the pay period you are adding: ")
-
-    while not pay_period.isnumeric():
-        print("ERROR: Pay Periods must be numeric. Try again.")
-        pay_period = input("Enter the pay period you are adding: ")
+    pay_period = fetch_period("Enter the pay period you are adding: ")
 
     start_str = input("When does this pay period start? MM/DD/YYYY format only: ")
 
@@ -87,11 +102,7 @@ def delete_pay_period():
     print("\n-------------------------------------")
     print("STARTING: Pay Period Deletion.")
 
-    pay_period = input("Please enter the pay period you would like to delete: ")
-
-    while not pay_period.isnumeric():
-        print("ERROR: Pay Period must be numeric. Try again.")
-        pay_period = input("Please enter the pay period you would like to delete: ")
+    pay_period = fetch_period("Please enter the pay period you would like to delete: ")
 
     con.execute("DELETE FROM payroll_schedule WHERE pay_period = ?", (pay_period,))
     con.commit()
