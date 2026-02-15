@@ -1,4 +1,4 @@
-import sqlite3, re, filenames, datetime as d
+import sqlite3, re, filenames, datetime as d, guide
 
 class Database:
     '''The Database Class is a wrapper for an Sqlite3 database. This class supports CRUD operations.'''
@@ -210,8 +210,11 @@ class Database:
                 pay_period = input(prompt).strip()
                 continue
 
-            if not 1 <= int(pay_period) <= 26:
-                print("ERROR: Pay Period must be between 1 and 26. Try again.")
+            first_period = guide.PeriodLength.first_period.value
+            last_period = guide.PeriodLength.last_period.value
+
+            if not first_period <= int(pay_period) <= last_period:
+                print(f"ERROR: Pay Period must be between {first_period} and {last_period}. Try again.")
                 pay_period = input(prompt).strip()
                 continue
 

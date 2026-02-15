@@ -41,3 +41,7 @@ class Tables(Enum):
 
 class WeekLength(Enum):
     days_in_period = 14
+
+class PeriodLength(Enum):
+    first_period = 1
+    last_period = 26
