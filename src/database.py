@@ -103,7 +103,7 @@ class Database:
             print(f"ERROR: Pay Period {pay_period} does not exist in the Database.")
         else:
             print(f"Pay Period {pay_period} old date: {matrix[0][1]}")
-            new_date = Database.fetch_date(f"Please enter the new start date for pay period {pay_period}. MM/DD/YYY format only: ")
+            new_date = Database.fetch_date(f"Please enter the new start date for pay period {pay_period}: ")
 
             start_date = d.datetime.strptime(new_date, "%m/%d/%Y")
             self.cur.execute("SELECT start_date FROM payroll_schedule WHERE start_date=?", (start_date.strftime("%Y-%m-%d"),))
