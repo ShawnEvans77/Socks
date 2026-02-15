@@ -183,9 +183,7 @@ class Database:
 
         date_str = Database.fetch_date("Please enter the invalid date you want to delete: ")
         invalid_date = d.datetime.strptime(date_str, "%m/%d/%Y")
-        invalid_str = invalid_date.strftime("%Y-%m-%d")
-
-        tuple = (invalid_str,)
+        tuple = (invalid_date.strftime("%Y-%m-%d"),)
 
         self.cur.execute("SELECT invalid_dates FROM days_off WHERE invalid_dates=?",tuple)
 
