@@ -34,18 +34,25 @@ def fetch_period(prompt: str) -> str:
             pay_period = input(prompt).strip()
             continue
 
+    return pay_period
+
+def fetch_date(prompt: str) -> str:
+
+    start_str = input(prompt)
+    pattern = "(0?[1-9]|1[012])\\/(0?[1-9]|[12][0-9]|3[01])\\/((19|20)\\d\\d)"
+
+    while not re.search(pattern, start_str):
+        print(f"ERROR: Input String {start_str} is not in MM/DD/YYYY format.")
+        start_str = input(prompt)
+
+    return start_str
+
 def insert_pay_period():
     print("\n-------------------------------------")
     print("STARTING: Pay Period Insertion.")
     pay_period = fetch_period("Enter the pay period you are adding: ")
 
-    start_str = input("When does this pay period start? MM/DD/YYYY format only: ")
-
-    pattern = "(0?[1-9]|1[012])\\/(0?[1-9]|[12][0-9]|3[01])\\/((19|20)\\d\\d)"
-
-    while not re.search(pattern, start_str):
-        print(f"ERROR: Input String {start_str} is not in MM/DD/YYYY format.")
-        start_str = input("When does this pay period start? MM/DD/YYYY format only: ")
+    start_str = fetch_date("When does this pay period start? MM/DD/YYYY format only: ")
 
     start_date = d.datetime.strptime(start_str, "%m/%d/%Y")
     end_date = start_date + d.timedelta(days=13)
@@ -65,12 +72,7 @@ def insert_invalid_date():
     print("\n-------------------------------------")
     print("STARTING: Invalid Date Insertion.")
 
-    date_str = input("Enter the invalid date you are adding. MM/DD/YYY format only: ")
-    pattern = "(0?[1-9]|1[012])\\/(0?[1-9]|[12][0-9]|3[01])\\/((19|20)\\d\\d)"
-
-    while not re.search(pattern, date_str):
-        print(f"ERROR: Input String {date_str} is not in MM/DD/YYYY format.")
-        date_str = input("Enter the invalid date you are adding. MM/DD/YYY format only: ")
+    date_str = fetch_date("Enter the invalid date you are adding. MM/DD/YYY format only: ")
 
     invalid_date = d.datetime.strptime(date_str, "%m/%d/%Y")
     invalid_str = invalid_date.strftime("%Y-%m-%d")
