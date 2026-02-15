@@ -33,14 +33,18 @@ $ py src/crud.py
 
 ******************************************************
 Welcome to Socks (🧦) C.R.U.D interface! What would you like to do? 
-P. Insert a new Pay Period
-I. Insert an Invalid Date
-C. View Pay Period Start & End Dates
-H. View Invalid Dates
-M. View this menu
-Q. Quit Program
+1. Create a new Pay Period
+2. Create an Invalid Date
+3. Read Pay Period Start & End Dates
+4. Read Invalid Dates
+5. Update a Pay Period
+6. Update an Invalid Date
+7. Delete a Pay Period
+8. Delete Invalid Date
+m. View Menu
+q. Quit
 ******************************************************
-Please type your selection: c
+Please type your selection: 3
 
 ----------------------------------------
 | pay period | start date | end date   |

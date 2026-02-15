@@ -1,7 +1,7 @@
 import sqlite3, re, filenames, datetime as d
 
 class Database:
-    '''The Database Class is a wrapper for an Sqlite3 database.'''
+    '''The Database Class is a wrapper for an Sqlite3 database. This class supports CRUD operations.'''
 
     def __init__(self):
         self.con = sqlite3.connect(f"{filenames.asset_folder}/{filenames.database_folder}/{filenames.database_name}")
@@ -19,7 +19,7 @@ class Database:
         if len(self.cur.fetchall()) != 0:
             print(f"ERROR: {pay_period} is already inside the Socks database. Consider Updating or Deleting pay period {pay_period}.")
         else:
-            start_str = Database.fetch_date("When does this pay period start? MM/DD/YYYY format only: ")
+            start_str = Database.fetch_date("When does this pay period start: ")
 
             start_date = d.datetime.strptime(start_str, "%m/%d/%Y")
             end_date = start_date + d.timedelta(days=13)
@@ -40,7 +40,7 @@ class Database:
         print("\n-------------------------------------")
         print("STARTING: Invalid Date Creation.")
 
-        date_str = Database.fetch_date("Enter the invalid date you are adding. MM/DD/YYY format only: ")
+        date_str = Database.fetch_date("Enter the invalid date you are adding: ")
 
         invalid_date = d.datetime.strptime(date_str, "%m/%d/%Y")
         invalid_str = invalid_date.strftime("%Y-%m-%d")
@@ -72,7 +72,7 @@ class Database:
         for tuple in matrix:
             print(f"| {int(tuple[0]):<10d} | {tuple[1]} | {tuple[2]} |")
 
-        print("---------------------------------------")
+        print("---------------------------------------\n")
 
     def read_invalid_dates(self):
         '''View all invalid dates in the databae.'''
@@ -90,7 +90,7 @@ class Database:
         print("-----------------\n")
 
     def update_pay_period(self):
-        '''Updates the start date of a given pay period.'''
+        '''Updates the start date of a given pay period, doing error checking for the pay period & start date.'''
 
         print("\n-------------------------------------")
         print("STARTING: Pay Period Update.")
@@ -106,14 +106,47 @@ class Database:
             new_date = Database.fetch_date(f"Please enter the new start date for pay period {pay_period}. MM/DD/YYY format only: ")
 
             start_date = d.datetime.strptime(new_date, "%m/%d/%Y")
-            end_date = start_date + d.timedelta(days=13)
-            tuple = (start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"), pay_period)
+            self.cur.execute("SELECT start_date FROM payroll_schedule WHERE start_date=?", (start_date.strftime("%Y-%m-%d"),))
 
-            self.cur.execute("UPDATE payroll_schedule SET start_date=?, end_date=? WHERE pay_period=?", tuple)
-            self.con.commit()
+            if len(self.cur.fetchall()) != 0:
+                print(f"ERROR: Start Date {new_date} already exists insode of the database.")
+            else:
+                end_date = start_date + d.timedelta(days=13)
+                tuple = (start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"), pay_period)
+                self.cur.execute("UPDATE payroll_schedule SET start_date=?, end_date=? WHERE pay_period=?", tuple)
+                self.con.commit()
 
         print("ENDING: Pay Period Update.")
+        print("-------------------------------------\n")
+
+    def update_invalid_date(self):
+        '''Updates the given invalid date, doing error checking for the invalid date.'''
+
         print("\n-------------------------------------")
+        print("STARTING: Invalid Date Update")
+
+        invalid_date = d.datetime.strptime(Database.fetch_date("Please enter the date you want to change: "), "%m/%d/%Y")
+        invalid_str = invalid_date.strftime("%Y-%m-%d")
+
+        self.cur.execute("SELECT invalid_dates FROM days_off WHERE invalid_dates=?",(invalid_str,))
+
+        if len(self.cur.fetchall()) == 0:
+            print(f"ERROR: Invalid Date {invalid_str} does not exist in the Database.")
+        else:
+            new_date = d.datetime.strptime(Database.fetch_date(f"Please enter the new date that will replace {invalid_str}: "), "%m/%d/%Y")
+            new_str = new_date.strftime("%Y-%m-%d")
+
+            self.cur.execute("SELECT invalid_dates FROM days_off WHERE invalid_dates=?",(new_str,))
+
+            if len(self.cur.fetchall()) != 0:
+                print(f"ERROR: Invalid Date {new_str} already exists inside of the database.")
+            else:
+                tuple = (new_str, invalid_str)
+                self.cur.execute("UPDATE days_off SET invalid_dates=? WHERE invalid_dates=?", (tuple))
+                self.con.commit()
+
+        print("ENDING: Invalid Date Update.")
+        print("-------------------------------------\n")
 
     def delete_pay_period(self):
         '''Delete a pay period from the databse, doing error checking for the pay period.'''
@@ -140,7 +173,7 @@ class Database:
         print("\n-------------------------------------")
         print("STARTING: Invalid Date Deletion.")
 
-        date_str = Database.fetch_date("Please enter the invalid date you want to delete. MM/DD/YYYY format only: ")
+        date_str = Database.fetch_date("Please enter the invalid date you want to delete: ")
 
         invalid_date = d.datetime.strptime(date_str, "%m/%d/%Y")
         invalid_str = invalid_date.strftime("%Y-%m-%d")
@@ -149,7 +182,7 @@ class Database:
         self.cur.execute("SELECT invalid_dates FROM days_off WHERE invalid_dates=?",tuple)
 
         if len(self.cur.fetchall()) == 0:
-            print(f"ERROR: Invalid Date {invalid_date} does not exist in the Database.")
+            print(f"ERROR: Invalid Date {invalid_str} does not exist in the Database.")
         else:
             self.con.execute("DELETE FROM days_off WHERE invalid_dates=?",tuple)
             self.con.commit()

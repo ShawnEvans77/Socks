@@ -8,8 +8,9 @@ def menu():
     print("3. Read Pay Period Start & End Dates")
     print("4. Read Invalid Dates")
     print("5. Update a Pay Period")
-    print("6. Delete a Pay Period")
-    print("7. Delete Invalid Date")
+    print("6. Update an Invalid Date")
+    print("7. Delete a Pay Period")
+    print("8. Delete Invalid Date")
     print("m. View Menu")
     print("q. Quit")
     print("******************************************************")
@@ -36,8 +37,10 @@ def main():
             case "5":
                 db.update_pay_period()
             case "6":
-                db.delete_pay_period()
+                db.update_invalid_date()
             case "7":
+                db.delete_pay_period()
+            case "8":
                 db.delete_invalid_date()
             case "m":
                 menu()
