@@ -1,7 +1,4 @@
-import sqlite3, re, filenames, datetime as d
-
-con = sqlite3.connect(f"{filenames.asset_folder}/{filenames.database_folder}/{filenames.database_name}")
-cur = con.cursor()
+import database
 
 def menu():
     print("******************************************************")
@@ -10,123 +7,15 @@ def menu():
     print("2. Create an Invalid Date")
     print("3. Read Pay Period Start & End Dates")
     print("4. Read Invalid Dates")
-    print("5. View this menu")
+    print("5. Update a Pay Period")
     print("6. Delete a Pay Period")
+    print("7. Delete Invalid Date")
+    print("m. View Menu")
     print("q. Quit")
     print("******************************************************")
 
-def insertable_period(pay_period: str) -> bool:
-    return pay_period.isnumeric() and 1 <= int(pay_period) <= 26
-
-def fetch_period(prompt: str) -> str:
-
-    pay_period = input(prompt).strip()
-
-    while not insertable_period(pay_period):
-
-        if not pay_period.isnumeric():
-            print("ERROR: Pay Period must be a number. Try again.")
-            pay_period = input(prompt).strip()
-            continue
-
-        if not 1 <= int(pay_period) <= 26:
-            print("ERROR: Pay Period must be between 1 and 26. Try again.")
-            pay_period = input(prompt).strip()
-            continue
-
-    return pay_period
-
-def fetch_date(prompt: str) -> str:
-
-    start_str = input(prompt)
-    pattern = "(0?[1-9]|1[012])\\/(0?[1-9]|[12][0-9]|3[01])\\/((19|20)\\d\\d)"
-
-    while not re.search(pattern, start_str):
-        print(f"ERROR: Input String {start_str} is not in MM/DD/YYYY format.")
-        start_str = input(prompt)
-
-    return start_str
-
-def insert_pay_period():
-    print("\n-------------------------------------")
-    print("STARTING: Pay Period Insertion.")
-    pay_period = fetch_period("Enter the pay period you are adding: ")
-
-    start_str = fetch_date("When does this pay period start? MM/DD/YYYY format only: ")
-
-    start_date = d.datetime.strptime(start_str, "%m/%d/%Y")
-    end_date = start_date + d.timedelta(days=13)
-
-    tuple = (pay_period, start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
-
-    cur.execute("INSERT INTO payroll_schedule(pay_period,start_date,end_date) VALUES(?,?,?);", tuple)
-
-    con.commit()
-
-    print(f"Pay Period {pay_period} has been successfully added to the Socks database!")
-
-    print("ENDING: Pay Period Insertion.")
-    print("-------------------------------------\n")
-
-def insert_invalid_date():
-    print("\n-------------------------------------")
-    print("STARTING: Invalid Date Insertion.")
-
-    date_str = fetch_date("Enter the invalid date you are adding. MM/DD/YYY format only: ")
-
-    invalid_date = d.datetime.strptime(date_str, "%m/%d/%Y")
-    invalid_str = invalid_date.strftime("%Y-%m-%d")
-    tuple = (invalid_str,)
-
-    cur.execute("INSERT INTO days_off(invalid_dates) VALUES(?);", tuple)
-
-    con.commit()
-
-    print("ENDING: Invalid Date Insertion.")
-    print("-------------------------------------\n")
-
-def view_pay_period_start_end():
-    cur.execute("SELECT * FROM payroll_schedule")
-
-    matrix = cur.fetchall()
-
-    print()
-
-    print("----------------------------------------")
-    print(f"| {"pay period":<8s} | {"start date"} | {"end date":<10s} |")
-    print("----------------------------------------")
-
-    for tuple in matrix:
-        print(f"| {int(tuple[0]):<10d} | {tuple[1]} | {tuple[2]} |")
-    print("---------------------------------------\n")
-
-def delete_pay_period():
-    print("\n-------------------------------------")
-    print("STARTING: Pay Period Deletion.")
-
-    pay_period = fetch_period("Please enter the pay period you would like to delete: ")
-
-    con.execute("DELETE FROM payroll_schedule WHERE pay_period = ?", (pay_period,))
-    con.commit()
-
-    print(f"Pay Period {pay_period} has been successfully removed from the database.")
-    print("-------------------------------------\n")
-
-def view_invalid_dates():
-    cur.execute("SELECT * FROM days_off;")
-
-    matrix = cur.fetchall()
-
-    print("\n-----------------")
-    print("| invalid dates |")
-    print("-----------------")
-
-    for tuple in matrix:
-        print(f"|  {str(tuple[0])}  |")
-        
-    print("-----------------\n")
-
 def main():
+    db = database.Database()
 
     menu()
     running = True
@@ -137,17 +26,21 @@ def main():
 
         match choice:
             case "1":
-                insert_pay_period()
+                db.create_pay_period()
             case "2":
-                insert_invalid_date()
+                db.create_invalid_date()
             case "3":
-                view_pay_period_start_end()
+                db.read_pay_period_start_end()
             case "4":
-                view_invalid_dates()
+                db.read_invalid_dates()
             case "5":
-                menu()
+                db.update_pay_period()
             case "6":
-                delete_pay_period()
+                db.delete_pay_period()
+            case "7":
+                db.delete_invalid_date()
+            case "m":
+                menu()
             case "q":
                 running = False
             case _:
