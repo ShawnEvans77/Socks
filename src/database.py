@@ -50,7 +50,7 @@ class Database:
         self.cur.execute("SELECT invalid_dates FROM days_off WHERE invalid_dates=?",tuple)
 
         if len(self.cur.fetchall()) != 0:
-            print(f"ERROR: Invalid Date {date_str} is already in the database. Consider updating or deleting it instead.")
+            print(f"ERROR: Invalid Date {date_str} is already in the database.")
         else:
             self.cur.execute("INSERT INTO days_off(invalid_dates) VALUES(?);", tuple)
             self.con.commit()
