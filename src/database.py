@@ -86,7 +86,7 @@ class Database:
         print("-----------------")
 
         for tuple in matrix:
-            print(f"|  {str(tuple[0])}  |")
+            print(f"|  {str(tuple[0])}   |")
             
         print("-----------------\n")
 
