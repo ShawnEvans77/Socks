@@ -143,9 +143,8 @@ class Database:
             new_str = new_date.strftime("%Y-%m-%d")
 
             self.cur.execute("SELECT invalid_dates FROM days_off WHERE invalid_dates=?",(new_str,))
-            matrix = self.cur.fetchall()
 
-            if len(matrix) != 0:
+            if len(self.cur.fetchall()) != 0:
                 print(f"ERROR: Invalid Date {to_add_date} already exists inside of the database.")
             else:
                 tuple = (new_str, invalid_str)
