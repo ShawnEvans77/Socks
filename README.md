@@ -19,11 +19,24 @@ $ py src/main.py
 
 Please enter your first name: shawn
 Please enter your last name: evans
-Please enter the pay period: 21
+
+Automatically select pay period? (y/n): y
+Socks has determined the current pay period is 26, starting at 02/08 and ending at 02/21.
+
+Did you miss any days this week? (y/n): y
+
+Pay Period 26 Days: 
+02/08 | 02/09 | 02/10 | 02/11 | 02/12 | 02/13 | 02/14 | 02/15 | 02/16 | 02/17 | 02/18 | 02/19 | 02/20 | 02/21
+
+Which days from this week did you miss?: 02/12 02/15
+
+Your missed days have been accounted for, generating time sheet with missed days left blank...
 *********************************************************
+
 Shawn, your timesheet has been generated in the timesheet folder.
 
 Thank you for using (🧦) Socks (🧦)!
+*********************************************************
 ```
 
 The application uses an SQLite based database, socks.db, stored in the resources directory. This database can be queried easily through the execution of crud.py. 
