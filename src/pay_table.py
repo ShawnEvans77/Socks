@@ -62,16 +62,6 @@ class PayTable:
         '''Returns the dictionary mapping pay periods to their appropiate dates.'''
 
         return self.pay_dict
-
-    def get_start(self, pay_period: int) -> d.datetime:
-        '''Returns a datetime object representing the start of the input pay_period.'''
-
-        return self.pay_dict[pay_period][0]
-    
-    def get_end(self, pay_period: int) -> d.datetime:
-        '''Returns a datetime object representing the start of the input pay_period.'''
-
-        return self.pay_dict[pay_period][1]
     
     def date_offset(self, pay_period: int, offset: int) -> d.datetime:
         '''Given a pay period, add an 'offset' number of days to its start date.'''
