@@ -35,13 +35,13 @@ class LearningCenter(Enum):
     lc_ca_rate = '$19.12'
     lc_dept_ext = '5821'
 
-class Tables(Enum):
-    pay_table = pt.PayTable()
-    schedule_table = st.ScheduleTable()
-
 class WeekLength(Enum):
     days_in_period = 14
 
 class PeriodLength(Enum):
     first_period = 1
     last_period = 26
+
+class Tables(Enum):
+    pay_table = pt.PayTable()
+    schedule_table = st.ScheduleTable()

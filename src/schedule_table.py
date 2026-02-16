@@ -7,6 +7,7 @@ class ScheduleTable:
 
     def __init__(self):
         self.schedule_dict = {}
+        self.missed_days_dict = {}
 
         with open(f"{filenames.asset_folder}/{filenames.text_folder}/schedules.json", "r") as file:
             data = json.load(file)
@@ -26,6 +27,7 @@ class ScheduleTable:
                     schedule.append(start_end)
 
                 self.schedule_dict[name] = schedule
+                self.missed_days_dict[name] = {}
 
     def get(self, name: str) -> List[List]:
         '''Recieves a person's name as input, returns their schedule.'''
@@ -36,3 +38,13 @@ class ScheduleTable:
         '''Returns if this person's name exists in the schedule table.'''
 
         return name in self.schedule_dict.keys()
+    
+    def add_missed_days(self, name: str, set: set):
+        '''Adds a person's missed days to a person's schedule.'''
+
+        self.missed_days_dict[name.lower()] = set
+
+    def get_missed_days(self, name: str) -> set:
+        '''Returns all of a person's missed days.'''
+
+        return self.missed_days_dict[name.lower()]

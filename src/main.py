@@ -25,11 +25,11 @@ def main():
         first_name = input("Please enter your first name: ").lower()
         last_name = input("Please enter your last name: ").lower()
 
-    choice = input("Do you want to select the pay period based on the system time? (y/n): ").lower().strip()
+    choice = input("\nAutomatically select pay period? (y/n): ").lower().strip()
 
     while choice != "y" and choice != "n":
         print("ERROR: Choice must be y or n.")
-        choice = input("Do you want to select the pay period based on the system time? (y/n): ").lower().strip()
+        choice = input("Automatically select pay period? (y/n): ").lower().strip()
 
     if choice == "y":
         if pay_period := retrieve_pay_period(guide.Tables.pay_table.value.get_pay_dict()):
@@ -40,7 +40,7 @@ def main():
 
     if choice == "n" or not pay_period:
 
-        pay_period = input("Please enter the pay period: ").strip()
+        pay_period = input("\nPlease enter the pay period: ").strip()
 
         while not valid_period(pay_period):
 
@@ -64,6 +64,34 @@ def main():
 
         pay_period = int(pay_period)
 
+    choice = input("\nDid you miss any days this week? (y/n): ").lower().strip()
+
+    while choice != "y" and choice != "n":
+        print("ERROR: Choice must be y or n.")
+        choice = input("Did you miss any days this week? (y/n): ").lower().strip()
+
+    match choice:
+        case "y":
+            days = guide.Tables.pay_table.value.get_period_dates(int(pay_period))
+            day_map = {guide.Tables.pay_table.value.date_str(day): day for day in days}
+            day_map_keys = day_map.keys()
+
+            print(f"\nPay Period {pay_period} Days: \n{" | ".join(day_map_keys)}\n")
+            missed_days = input("Which days from this week did you miss?: ").strip().lower()
+            missed_list = missed_days.split()
+
+            while not set(missed_list) <= set(day_map_keys):
+                print("ERROR: Please enter all days you missed on one line separated by spaces. Ensure all days are only from the above line.")
+                missed_days = input("Which days from this week did you miss?: ").strip().lower()
+                missed_list = missed_days.split()
+
+            missed_date_times = {day_map[date_str] for date_str in missed_list}
+            guide.Tables.schedule_table.value.add_missed_days(f"{first_name} {last_name}", missed_date_times)
+
+            print("\nYour missed days have been accounted for, generating time sheet with missed days left blank...")
+        case "n":
+            print("\nNo missed days, generating time sheet will all days filled...")
+
     print("*********************************************************")
 
     input_path = f"{filenames.asset_folder}/{filenames.pdf_input_folder}"
@@ -77,7 +105,7 @@ def main():
     
     sheet.output_timesheet(file_name)
 
-    print(f"{first_name.capitalize()}, your timesheet has been generated in the timesheet folder.")
+    print(f"\n{first_name.capitalize()}, your timesheet has been generated in the timesheet folder.")
     print(f"\nThank you for using (🧦) Socks (🧦)!")
     print("*********************************************************")
 
