@@ -9,7 +9,7 @@ class ScheduleTable:
         self.schedule_dict = {}
         self.missed_days_dict = {}
 
-        with open(f"{filenames.asset_folder}/{filenames.text_folder}/schedules.json", "r") as file:
+        with open(f"{filenames.asset_folder}/{filenames.json_folder}/{filenames.json_name}", "r") as file:
             data = json.load(file)
 
             employees = data['employees']
