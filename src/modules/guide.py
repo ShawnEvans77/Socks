@@ -1,4 +1,4 @@
-import pay_table as pt, schedule_table as st
+import structures.pay_table as pt, structures.schedule_table as st
 from enum import Enum
 
 class Indices(Enum):

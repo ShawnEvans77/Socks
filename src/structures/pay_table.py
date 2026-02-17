@@ -1,0 +1,89 @@
+import sqlite3, modules.filenames as filenames, modules.guide as guide, datetime as d
+from typing import List
+
+class PayTable:
+    """The PayTable class is how we access pay period dates from an integer representing the pay period. 
+
+    Attributes
+        pay_dict - A dictionary that relates pay periods to their proper start date. 
+        invalid_dates - A list representing all dates where college assistants do not work.
+    """
+
+    def __init__(self):
+        self.con = sqlite3.connect(f"{filenames.asset_folder}/{filenames.database_folder}/{filenames.database_name}")
+        self.cur = self.con.cursor()
+        self.pay_dict = {}
+        self.invalid_dates = []
+
+        res = self.cur.execute("SELECT pay_period, start_date, end_date FROM payroll_schedule;")
+        matrix = res.fetchall()
+
+        for tuple in matrix:
+            pay_period = int(tuple[0])
+            start, end = d.datetime.strptime(str(tuple[1]), "%Y-%m-%d"), d.datetime.strptime(str(tuple[2]), "%Y-%m-%d")
+            self.pay_dict[pay_period] = (start, end)
+
+        res = self.cur.execute("SELECT * FROM days_off;")
+        matrix = res.fetchall()
+
+        for tuple in matrix:
+            self.invalid_dates.append(d.datetime.strptime(str(tuple[0]), "%Y-%m-%d"))
+
+    @staticmethod
+    def str_to_datetime(date_str: str) -> d.datetime:
+        """Takes a string in the form MM/DD/YYYY and converts it into a datetime object."""
+
+        date_parts = date_str.split('/')
+        return d.datetime(month=int(date_parts[0]), day=int(date_parts[1]), year=int(date_parts[2]))
+    
+    @staticmethod
+    def date_str(date: d.datetime) -> str:
+        """Given a datetime object, return a string in the form DD/YY. Needed when filling out the 14 date fields
+        of the timesheet."""
+
+        return date.strftime("%m/%d")
+
+    def get_period_dates(self, pay_period: int) -> List[d.datetime]:
+        """Returns a list of datetime objects representing the days in a given pay period."""
+
+        list = []
+
+        for i in range(guide.WeekLength.days_in_period.value):
+            list.append(self.date_offset(pay_period, i))
+
+        return list
+    
+    def get_invalid_dates(self) -> List[d.datetime]:
+        '''Returns a list representing all days in which employees do not work.'''
+        
+        return self.invalid_dates
+    
+    def get_pay_dict(self) -> dict:
+        '''Returns the dictionary mapping pay periods to their appropiate dates.'''
+
+        return self.pay_dict
+    
+    def date_offset(self, pay_period: int, offset: int) -> d.datetime:
+        '''Given a pay period, add an 'offset' number of days to its start date.'''
+
+        return self.pay_dict[pay_period][0] + d.timedelta(days=offset)
+    
+    def start_date_string(self, pay_period: int) -> str:
+        '''Given a pay_period, return a string representing the start date.'''
+
+        return PayTable.date_str(self.pay_dict[pay_period][0])
+   
+    def end_date_string(self, pay_period: int) -> str:
+        '''Given a pay_period, return its conclusion as a string.'''
+
+        return PayTable.date_str(self.pay_dict[pay_period][1])
+    
+    def date_offset_string(self, pay_period: int, offset: int) -> str:
+        '''Given a pay period, add an offset number of days to its start date, then return it as a string.'''
+
+        return PayTable.date_str(self.date_offset(pay_period, offset))
+    
+    def has_pay_period(self, pay_period: str) -> bool:
+        '''Returns whether or not this pay period exists.'''
+        
+        return int(pay_period) in self.pay_dict.keys()

@@ -1,4 +1,4 @@
-import json, filenames
+import json, modules.filenames as filenames
 from typing import List
 
 class ScheduleTable:
