@@ -1,8 +1,8 @@
 import sqlite3, re, datetime as d
 from ..constants import filenames, guide
 
-class Database:
-    '''The Database Class is a wrapper for an Sqlite3 database. This class supports CRUD operations.'''
+class Wrapper:
+    '''The Wrapper Class is a wrapper for an Sqlite3 database. This class supports CRUD operations.'''
 
     def __init__(self):
         self.con = sqlite3.connect(f"{filenames.asset_folder}/{filenames.database_folder}/{filenames.database_name}")
@@ -14,13 +14,13 @@ class Database:
         print("\n-------------------------------------")
         print("STARTING: Pay Period Creation.")
 
-        pay_period = Database.fetch_period("Enter the pay period you are adding: ")
+        pay_period = Wrapper.fetch_period("Enter the pay period you are adding: ")
         self.cur.execute("SELECT pay_period FROM payroll_schedule WHERE pay_period=?",(pay_period,))
 
         if len(self.cur.fetchall()) != 0:
             print(f"ERROR: {pay_period} is already inside the database.")
         else:
-            start_str = Database.fetch_date("When does this pay period start: ")
+            start_str = Wrapper.fetch_date("When does this pay period start: ")
             start_date = d.datetime.strptime(start_str, "%m/%d/%Y")
 
             self.cur.execute("SELECT pay_period, start_date FROM payroll_schedule WHERE start_date=?", (start_date.strftime("%Y-%m-%d"),))
@@ -44,7 +44,7 @@ class Database:
         print("\n-------------------------------------")
         print("STARTING: Invalid Date Creation.")
 
-        date_str = Database.fetch_date("Enter the invalid date you are adding: ")
+        date_str = Wrapper.fetch_date("Enter the invalid date you are adding: ")
         invalid_date = d.datetime.strptime(date_str, "%m/%d/%Y")
         tuple = (invalid_date.strftime("%Y-%m-%d"),)
 
@@ -97,7 +97,7 @@ class Database:
         print("\n-------------------------------------")
         print("STARTING: Pay Period Update.")
 
-        pay_period = Database.fetch_period("Please enter the pay period you would like to update: ")
+        pay_period = Wrapper.fetch_period("Please enter the pay period you would like to update: ")
         self.cur.execute("SELECT pay_period, start_date FROM payroll_schedule WHERE pay_period=?", (pay_period,))
         matrix = self.cur.fetchall()
 
@@ -107,7 +107,7 @@ class Database:
             old = d.datetime.strptime(matrix[0][1], "%Y-%m-%d").strftime("%m/%d/%Y")
             print(f"Pay Period {pay_period} old date: {old}")
 
-            start_str = Database.fetch_date(f"Please enter the new start date for pay period {pay_period}: ")
+            start_str = Wrapper.fetch_date(f"Please enter the new start date for pay period {pay_period}: ")
             start_date = d.datetime.strptime(start_str, "%m/%d/%Y")
 
             self.cur.execute("SELECT pay_period FROM payroll_schedule WHERE start_date=?", (start_date.strftime("%Y-%m-%d"),))
@@ -131,7 +131,7 @@ class Database:
         print("\n-------------------------------------")
         print("STARTING: Invalid Date Update")
 
-        date_str = Database.fetch_date("Please enter the date you want to change: " )
+        date_str = Wrapper.fetch_date("Please enter the date you want to change: " )
         invalid_date = d.datetime.strptime(date_str, "%m/%d/%Y")
         invalid_str = invalid_date.strftime("%Y-%m-%d")
         self.cur.execute("SELECT invalid_dates FROM days_off WHERE invalid_dates=?",(invalid_str,))
@@ -139,7 +139,7 @@ class Database:
         if len(self.cur.fetchall()) == 0:
             print(f"ERROR: Invalid Date {date_str} does not exist in the Database.")
         else:
-            to_add_date = Database.fetch_date(f"Please enter the new date that will replace {date_str}: ")
+            to_add_date = Wrapper.fetch_date(f"Please enter the new date that will replace {date_str}: ")
             new_date = d.datetime.strptime(to_add_date, "%m/%d/%Y")
             new_str = new_date.strftime("%Y-%m-%d")
 
@@ -162,7 +162,7 @@ class Database:
         print("\n-------------------------------------")
         print("STARTING: Pay Period Deletion.")
 
-        pay_period = Database.fetch_period("Please enter the pay period you would like to delete: ")
+        pay_period = Wrapper.fetch_period("Please enter the pay period you would like to delete: ")
         self.cur.execute("SELECT pay_period FROM payroll_schedule WHERE pay_period=?",(pay_period,))
 
         if len(self.cur.fetchall()) == 0:
@@ -181,7 +181,7 @@ class Database:
         print("\n-------------------------------------")
         print("STARTING: Invalid Date Deletion.")
 
-        date_str = Database.fetch_date("Please enter the invalid date you want to delete: ")
+        date_str = Wrapper.fetch_date("Please enter the invalid date you want to delete: ")
         invalid_date = d.datetime.strptime(date_str, "%m/%d/%Y")
         tuple = (invalid_date.strftime("%Y-%m-%d"),)
 
@@ -203,7 +203,7 @@ class Database:
 
         pay_period = input(prompt).strip()
 
-        while not Database.insertable_period(pay_period):
+        while not Wrapper.insertable_period(pay_period):
 
             if not pay_period.isnumeric():
                 print("ERROR: Pay Period must be a number. Try again.")

@@ -1,4 +1,4 @@
-from ..database import database
+from ..utils import wrapper
 
 def menu():
     print("******************************************************")
@@ -16,7 +16,7 @@ def menu():
     print("******************************************************")
 
 def main():
-    db = database.Database()
+    wp = wrapper.Wrapper()
 
     menu()
     running = True
@@ -27,21 +27,21 @@ def main():
 
         match choice:
             case "1":
-                db.create_pay_period()
+                wp.create_pay_period()
             case "2":
-                db.create_invalid_date()
+                wp.create_invalid_date()
             case "3":
-                db.read_pay_period_start_end()
+                wp.read_pay_period_start_end()
             case "4":
-                db.read_invalid_dates()
+                wp.read_invalid_dates()
             case "5":
-                db.update_pay_period()
+                wp.update_pay_period()
             case "6":
-                db.update_invalid_date()
+                wp.update_invalid_date()
             case "7":
-                db.delete_pay_period()
+                wp.delete_pay_period()
             case "8":
-                db.delete_invalid_date()
+                wp.delete_invalid_date()
             case "m":
                 menu()
             case "q":
