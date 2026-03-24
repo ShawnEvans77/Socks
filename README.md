@@ -12,7 +12,7 @@ pip install -r requirements.txt
 ## Usage
 
 ```
-$ py src/main.py
+$ py -m src.scripts.main
 
 *********************************************************
 (🧦) Welcome to Socks (🧦)
@@ -42,7 +42,7 @@ Thank you for using (🧦) Socks (🧦)!
 The application uses an SQLite based database, socks.db, stored in the resources directory. This database can be queried easily through the execution of crud.py. 
 
 ```
-$ py src/crud.py
+$ py -m src.scripts.crud
 
 ******************************************************
 Welcome to Socks (🧦) C.R.U.D interface! What would you like to do? 

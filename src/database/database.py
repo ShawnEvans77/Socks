@@ -1,4 +1,5 @@
-import sqlite3, re, filenames, datetime as d, guide
+import sqlite3, re, datetime as d
+from ..constants import filenames, guide
 
 class Database:
     '''The Database Class is a wrapper for an Sqlite3 database. This class supports CRUD operations.'''
