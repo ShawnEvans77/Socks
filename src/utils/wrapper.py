@@ -77,7 +77,7 @@ class Wrapper:
         print("---------------------------------------\n")
 
     def read_invalid_dates(self):
-        '''View all invalid dates in the databae.'''
+        '''View all invalid dates in the database.'''
 
         self.cur.execute("SELECT * FROM days_off;")
         matrix = self.cur.fetchall()
