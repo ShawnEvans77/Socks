@@ -1,6 +1,6 @@
-import json
 from ..constants import filenames
 from typing import List
+import json
 
 class ScheduleTable:
     """The ScheduleTable takes schedule data from a file and converts it into an easy to use dictionary.

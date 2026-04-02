@@ -1,4 +1,3 @@
-import datetime as d
 from ..constants import guide, filenames
 from ..objects import clock
 from pypdf import PdfWriter

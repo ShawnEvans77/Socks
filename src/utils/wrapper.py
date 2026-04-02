@@ -1,5 +1,5 @@
-import sqlite3, re, datetime as d
 from ..constants import filenames, guide
+import sqlite3, re, datetime as d
 
 class Wrapper:
     '''The Wrapper Class is a wrapper for an Sqlite3 database. This class supports CRUD operations.'''
