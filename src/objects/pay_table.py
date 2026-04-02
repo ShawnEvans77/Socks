@@ -1,6 +1,6 @@
-import sqlite3, datetime as d
 from ..constants import filenames, guide
 from typing import List
+import sqlite3, datetime as d
 
 class PayTable:
     """The PayTable class is how we access pay period dates from an integer representing the pay period. 
