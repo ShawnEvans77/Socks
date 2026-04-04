@@ -42,7 +42,7 @@ Thank you for using (🧦) Socks (🧦)!
 The application uses an SQLite based database, socks.db, stored in the resources directory. This database can be queried easily through the execution of crud.py. 
 
 ```
-$ py -m app.crud
+$ py -m crud.crud
 
 ******************************************************
 Welcome to Socks (🧦) C.R.U.D interface! What would you like to do? 
