@@ -1,4 +1,4 @@
-from ..utils import wrapper
+from src.utils import wrapper
 
 def menu():
     print("******************************************************")
