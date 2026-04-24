@@ -63,7 +63,7 @@ $ py -m app.main
 The application uses an SQLite based database, socks.db, stored in the resources directory. This database can be queried easily through the execution of crud.py. 
 
 ```
-$ py -m app.crud
+$ py -m crud.crud
   ╔════════════════════════════════════════════╗
   ║ 🧦  SOCKS CRUD INTERFACE                   ║
   ║ [b] back inside any operation  [q] quit    ║
