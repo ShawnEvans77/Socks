@@ -21,14 +21,14 @@ class PayTable:
 
         for tuple in matrix:
             pay_period = int(tuple[0])
-            start, end = d.datetime.strptime(str(tuple[1]), "%Y-%m-%d"), d.datetime.strptime(str(tuple[2]), "%Y-%m-%d")
+            start, end = d.datetime.strptime(str(tuple[1]), "%m/%d/%Y"), d.datetime.strptime(str(tuple[2]), "%m/%d/%Y")
             self.pay_dict[pay_period] = (start, end)
 
         res = self.cur.execute("SELECT * FROM days_off;")
         matrix = res.fetchall()
 
         for tuple in matrix:
-            self.invalid_dates.append(d.datetime.strptime(str(tuple[0]), "%Y-%m-%d"))
+            self.invalid_dates.append(d.datetime.strptime(str(tuple[0]), "%m/%d/%Y"))
 
     @staticmethod
     def str_to_datetime(date_str: str) -> d.datetime:

@@ -1,115 +1,264 @@
 from src.objects import sheet_writer
 from src.constants import guide, filenames
-import datetime
+import datetime, re
 
-def valid_period(pay_period: str) -> bool:
-    return pay_period.isnumeric() and (guide.PeriodLength.first_period.value <= int(pay_period) <= guide.PeriodLength.last_period.value) and guide.Tables.pay_table.value.has_pay_period(pay_period)
 
-def retrieve_pay_period(pay_dict: dict) -> str:
-    now = datetime.datetime.now()
-    items = pay_dict.items()
+# ─── ANSI Colors ──────────────────────────────────────────────────────────────
 
-    for pay_period, dates in items:
-         if dates[0] <= now <= dates[1]:
-             return pay_period
-            
-    return None
+class Color:
+    RESET  = "\033[0m";  BOLD   = "\033[1m";  DIM    = "\033[2m"
+    RED    = "\033[91m"; GREEN  = "\033[92m"; YELLOW = "\033[93m"
+    BLUE   = "\033[94m"; CYAN   = "\033[96m"; WHITE  = "\033[97m"
 
-def main():
-    print("*********************************************************")
-    print("(🧦) Welcome to Socks (🧦)\n")
+def c(text: str, *codes: str) -> str:
+    return "".join(codes) + str(text) + Color.RESET
 
-    first_name = input("Please enter your first name: ").lower().strip()
-    last_name = input("Please enter your last name: ").lower().strip()
 
-    while not guide.Tables.schedule_table.value.has_name(f"{first_name} {last_name}"):
-        print(f"ERROR: Socks currently has no employee called {first_name.title()} {last_name.title()}. Try again.")
-        first_name = input("Please enter your first name: ").lower()
-        last_name = input("Please enter your last name: ").lower()
+# ─── Control Flow ─────────────────────────────────────────────────────────────
 
-    choice = input("\nAutomatically select pay period? (y/n): ").lower().strip()
+class QuitApp(Exception):
+    pass
 
-    while choice != "y" and choice != "n":
-        print("ERROR: Choice must be y or n.")
-        choice = input("Automatically select pay period? (y/n): ").lower().strip()
+class BackApp(Exception):
+    pass
 
-    if choice == "y":
-        if pay_period := retrieve_pay_period(guide.Tables.pay_table.value.get_pay_dict()):
-            pay_period = int(pay_period)
-            print(f"Socks has determined the current pay period is {pay_period}, starting at {guide.Tables.pay_table.value.start_date_string(pay_period)} and ending at {guide.Tables.pay_table.value.end_date_string(pay_period)}.")
-        else:
-            print("Unfournately, the system time does not exist within Socks' pay periods. Please enter the pay period manually.")
 
-    if choice == "n" or not pay_period:
+# ─── UI Primitives ────────────────────────────────────────────────────────────
 
-        pay_period = input("\nPlease enter the pay period: ").strip()
+def _rule(ch: str = "─", n: int = 50) -> None:
+    print(c("  " + ch * n, Color.DIM))
 
-        while not valid_period(pay_period):
+def _blank() -> None:
+    print()
 
-            if not pay_period.isnumeric():
-                print("ERROR: Pay Period must be a number. Try again.")
-                pay_period = input("Please enter the pay period: ").strip()
-                continue
+def _success(msg: str) -> None: print(f"  {c('✔  ' + msg, Color.GREEN)}")
+def _error(msg: str)   -> None: print(f"  {c('✘  ' + msg, Color.RED)}")
+def _warn(msg: str)    -> None: print(f"  {c('⚠  ' + msg, Color.YELLOW)}\n")
+def _info(msg: str)    -> None: print(f"  {c('ℹ  ' + msg, Color.CYAN)}")
 
-            first_period = guide.PeriodLength.first_period.value
-            last_period = guide.PeriodLength.last_period.value
+def _section(step: int, total: int, title: str) -> None:
+    _blank()
+    _rule()
+    step_tag = c(f"  [{step}/{total}]", Color.DIM)
+    print(f"{step_tag}  {c(title, Color.BOLD + Color.CYAN)}")
+    _rule()
+    _blank()
 
-            if not first_period <= int(pay_period) <= last_period:
-                print(f"ERROR: Pay Period must be between {first_period} and {last_period}. Try again.")
-                pay_period = input("Please enter the pay period: ").strip()
-                continue
+def _prompt(label: str, hint: str = "") -> str:
+    """Styled input. Raises control-flow exceptions for q/back commands."""
+    if hint:
+        print(c(f"  ({hint})", Color.DIM))
+    raw = input(c(f"  ▶ {label}: ", Color.CYAN)).strip()
+    command = raw.lower()
+    if command == "q":
+        raise QuitApp
+    if command == "b":
+        raise BackApp
+    return raw
 
-            if not guide.Tables.pay_table.value.has_pay_period(pay_period):
-                print(f"ERROR: Socks currently has no pay period {pay_period}. Try again.")
-                pay_period = input("Please enter the pay period: ").strip()
-                continue
+def _yn(label: str) -> bool:
+    """Binary yes/no prompt. Raises QuitApp on 'q'."""
+    while True:
+        raw = _prompt(label, hint="y / n").lower()
+        if raw == "y": return True
+        if raw == "n": return False
+        _warn("Please enter y or n.")
 
-        pay_period = int(pay_period)
 
-    choice = input("\nDid you miss any days this week? (y/n): ").lower().strip()
+# ─── Banner ───────────────────────────────────────────────────────────────────
 
-    while choice != "y" and choice != "n":
-        print("ERROR: Choice must be y or n.")
-        choice = input("Did you miss any days this week? (y/n): ").lower().strip()
+_LOGO = [
+    "  ███████╗  ██████╗  ██████╗██╗  ██╗███████╗",
+    "  ██╔════╝ ██╔═══██╗██╔════╝██║ ██╔╝██╔════╝",
+    "  ███████╗ ██║   ██║██║     █████╔╝ ███████╗ ",
+    "  ╚════██║ ██║   ██║██║     ██╔═██╗ ╚════██║ ",
+    "  ███████║ ╚██████╔╝╚██████╗██║  ██╗███████║ ",
+    "  ╚══════╝  ╚═════╝  ╚═════╝╚═╝  ╚═╝╚══════╝ ",
+]
 
-    match choice:
-        case "y":
-            days = guide.Tables.pay_table.value.get_period_dates(int(pay_period))
-            day_map = {guide.Tables.pay_table.value.date_str(day): day for day in days}
-            day_map_keys = day_map.keys()
+def _banner() -> None:
+    _blank()
+    for line in _LOGO:
+        print(c(line, Color.CYAN + Color.BOLD))
+    _blank()
+    _rule("═")
+    print(c("  [q] at anytime to quit. [b] to go back", Color.DIM))
+    _rule("═")
 
-            print(f"\nPay Period {pay_period} Days: \n{" | ".join(day_map_keys)}\n")
-            missed_days = input("Which days from this week did you miss?: ").strip().lower()
-            missed_list = missed_days.split()
 
-            while not set(missed_list) <= set(day_map_keys):
-                print("ERROR: Please enter all days you missed on one line separated by spaces. Ensure all days are only from the above line.")
-                missed_days = input("Which days from this week did you miss?: ").strip().lower()
-                missed_list = missed_days.split()
+# ─── Step 1: Employee ─────────────────────────────────────────────────────────
 
-            missed_date_times = {day_map[date_str] for date_str in missed_list}
-            guide.Tables.schedule_table.value.add_missed_days(f"{first_name} {last_name}", missed_date_times)
+def _step_employee() -> tuple[str, str]:
+    _section(1, 3, "Employee")
 
-            print("\nYour missed days have been accounted for, generating time sheet with missed days left blank...")
-        case "n":
-            print("\nNo missed days, generating time sheet will all days filled...")
+    while True:
+        first = _prompt("First name").lower()
+        last  = _prompt("Last name").lower()
+        full  = f"{first} {last}"
 
-    print("*********************************************************")
+        if guide.Tables.schedule_table.value.has_name(full):
+            _success(f"Welcome, {c(first.title() + ' ' + last.title(), Color.BOLD)}!")
+            return first, last
+
+        _error(f"No employee named {first.title()} {last.title()} found.")
+        _blank()
+
+
+# ─── Step 2: Pay Period ───────────────────────────────────────────────────────
+
+def _step_pay_period() -> int:
+    _section(2, 3, "Pay Period")
+
+    if _yn("Auto-detect current pay period?"):
+        pp = _detect_pay_period()
+        if pp is not None:
+            start = guide.Tables.pay_table.value.start_date_string(pp)
+            end   = guide.Tables.pay_table.value.end_date_string(pp)
+            _info(
+                f"Detected pay period {c(str(pp), Color.BOLD + Color.CYAN)}"
+                f"  {c(f'{start}  →  {end}', Color.DIM)}"
+            )
+            return pp
+        _warn("System time falls outside all known pay periods — switching to manual entry.")
+        _blank()
+
+    first_p = guide.PeriodLength.first_period.value
+    last_p  = guide.PeriodLength.last_period.value
+
+    while True:
+        raw = _prompt("Pay period", hint=f"{first_p} – {last_p}")
+
+        if not raw.isnumeric():
+            _warn("Pay period must be a number.")
+            continue
+        if not first_p <= int(raw) <= last_p:
+            _warn(f"Pay period must be between {first_p} and {last_p}.")
+            continue
+        if not guide.Tables.pay_table.value.has_pay_period(raw):
+            _warn(f"Pay period {raw} hasn't been set up yet.")
+            continue
+
+        pp = int(raw)
+        _success(f"Pay period {c(str(pp), Color.BOLD)} selected.")
+        return pp
+
+
+# ─── Step 3: Missed Days ──────────────────────────────────────────────────────
+
+def _step_missed_days(first: str, last: str, pay_period: int) -> None:
+    _section(3, 3, "Missed Days")
+
+    if not _yn("Did you miss any days this pay period?"):
+        _info("No missed days — all slots will be filled.")
+        return
+
+    _blank()
+
+    days    = guide.Tables.pay_table.value.get_period_dates(pay_period)
+    day_map = {guide.Tables.pay_table.value.date_str(day): day for day in days}
+    keys    = list(day_map)
+
+    print(c("  Available days:", Color.DIM))
+    print("  " + c(" | ", Color.DIM).join(c(k, Color.YELLOW + Color.BOLD) for k in keys))
+    _blank()
+
+    while True:
+        raw    = _prompt("Missed days (space-separated)").lower()
+        missed = raw.split()
+
+        if not missed:
+            _warn("Enter at least one day, or answer n above to skip.")
+            continue
+
+        invalid = set(missed) - set(keys)
+        if invalid:
+            _warn(f"Unrecognized: {c(', '.join(sorted(invalid)), Color.YELLOW)}. Use only the dates listed above.")
+            continue
+
+        guide.Tables.schedule_table.value.add_missed_days(f"{first} {last}", {day_map[s] for s in missed})
+        _success(f"{len(missed)} missed day(s) recorded: {', '.join(c(d, Color.YELLOW) for d in sorted(missed))}")
+        return
+
+
+# ─── Generate ─────────────────────────────────────────────────────────────────
+
+def _generate(first: str, last: str, pay_period: int) -> str:
+    _blank()
+    _rule("═")
+    print(f"  {c('Generating timesheet...', Color.BOLD + Color.WHITE)}")
+    _rule("═")
+    _blank()
 
     input_path = f"{filenames.asset_folder}/{filenames.pdf_input_folder}"
-    input_file_name = f"{filenames.starting_pdf}"
-
-    sheet = sheet_writer.SheetWriter(f"{input_path}/{input_file_name}", last_name, first_name, pay_period)
-
+    sheet = sheet_writer.SheetWriter(
+        f"{input_path}/{filenames.starting_pdf}", last, first, pay_period
+    )
     sheet.write_timesheet()
 
-    file_name = f"{last_name.capitalize()}_Timesheet_{pay_period}.pdf"
-    
+    file_name = f"{last.capitalize()}_Timesheet_{pay_period}.pdf"
     sheet.output_timesheet(file_name)
 
-    print(f"\n{first_name.capitalize()}, your timesheet has been generated in the timesheet folder.")
-    print(f"\nThank you for using (🧦) Socks (🧦)!")
-    print("*********************************************************")
+    return file_name
 
-if __name__ == '__main__':
+
+# ─── Internal Helpers ─────────────────────────────────────────────────────────
+
+def _detect_pay_period() -> int | None:
+    now = datetime.datetime.now()
+    for pay_period, dates in guide.Tables.pay_table.value.get_pay_dict().items():
+        if dates[0] <= now <= dates[1]:
+            return int(pay_period)
+    return None
+
+
+# ─── Main ─────────────────────────────────────────────────────────────────────
+
+def main():
+    _banner()
+    step = 1
+    first = None
+    last = None
+    pay_period = None
+
+    try:
+        while True:
+            try:
+                if step == 1:
+                    first, last = _step_employee()
+                    step = 2
+                elif step == 2:
+                    pay_period = _step_pay_period()
+                    step = 3
+                elif step == 3:
+                    _step_missed_days(first, last, pay_period)
+                    file_name = _generate(first, last, pay_period)
+
+                    _success(f"Saved  →  {c(file_name, Color.BOLD + Color.WHITE)}")
+                    _rule()
+                    print(f"  {c(f'Thanks for using Socks, {first.title()}! 🧦', Color.CYAN + Color.BOLD)}")
+                    _rule()
+                    _blank()
+                    return
+            except BackApp:
+                if step > 1:
+                    step -= 1
+                else:
+                    _info("Already at the first step.")
+
+    except QuitApp:
+        _blank()
+        _rule()
+        print(c("  Goodbye! 🧦", Color.DIM))
+        _rule()
+        _blank()
+
+    except KeyboardInterrupt:
+        _blank()
+        _rule()
+        print(c("  Interrupted. Goodbye! 🧦", Color.DIM))
+        _rule()
+        _blank()
+
+
+if __name__ == "__main__":
     main()
