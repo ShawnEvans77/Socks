@@ -11,6 +11,8 @@ pip install -r requirements.txt
 
 ## Usage
 
+This is what the program's interface looks like.
+
 ```
 $ py -m app.main
 
@@ -59,6 +61,8 @@ $ py -m app.main
   Thanks for using Socks, Shawn! 🧦
   ──────────────────────────────────────────────────
 ```
+
+Once the program finishes, a filled out timesheet is placed in the timesheets directory.
 
 The application uses an SQLite based database, socks.db, stored in the resources directory. This database can be queried easily through the execution of crud.py. 
 
