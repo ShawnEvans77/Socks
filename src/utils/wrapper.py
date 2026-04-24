@@ -246,10 +246,11 @@ class Wrapper:
 
         while True:
             raw = Wrapper._prompt(prompt, hint=f"{first}–{last}")
+            command = raw.lower()
 
-            if raw == "b":
+            if command == "b":
                 raise GoBack
-            if raw == "q":
+            if command == "q":
                 raise QuitApp
             try:
                 return parse_pay_period(raw, first, last)
