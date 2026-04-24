@@ -28,9 +28,9 @@ def _rule(ch: str = "─", n: int = 50) -> None:
 def _blank() -> None:
     print()
 
-def _success(msg: str) -> None: print(f"\n  {c('✔  ' + msg, Color.GREEN)}\n")
+def _success(msg: str) -> None: print(f"  {c('✔  ' + msg, Color.GREEN)}")
 def _error(msg: str)   -> None: print(f"  {c('✘  ' + msg, Color.RED)}")
-def _warn(msg: str)    -> None: print(f"  {c('⚠  ' + msg, Color.YELLOW)}")
+def _warn(msg: str)    -> None: print(f"  {c('⚠  ' + msg, Color.YELLOW)}\n")
 def _info(msg: str)    -> None: print(f"  {c('ℹ  ' + msg, Color.CYAN)}")
 
 def _section(step: int, total: int, title: str) -> None:
@@ -43,9 +43,8 @@ def _section(step: int, total: int, title: str) -> None:
 
 def _prompt(label: str, hint: str = "") -> str:
     """Styled input. Raises QuitApp if user types 'q'."""
-    nav   = c("[q] quit", Color.DIM)
-    extra = c(f"  ({hint})  ", Color.DIM) if hint else "  "
-    print(f"{extra}{nav}")
+    if hint:
+        print(c(f"  ({hint})", Color.DIM))
     raw = input(c(f"  ▶ {label}: ", Color.CYAN)).strip()
     if raw.lower() == "q":
         raise QuitApp
@@ -76,8 +75,6 @@ def _banner() -> None:
     for line in _LOGO:
         print(c(line, Color.CYAN + Color.BOLD))
     _blank()
-    print(c("           🧦  Timesheet Generator", Color.DIM))
-    _blank()
     _rule("═")
     print(c("  Type q at any prompt to quit.", Color.DIM))
     _rule("═")
@@ -107,7 +104,6 @@ def _step_pay_period() -> int:
     _section(2, 3, "Pay Period")
 
     if _yn("Auto-detect current pay period?"):
-        _blank()
         pp = _detect_pay_period()
         if pp is not None:
             start = guide.Tables.pay_table.value.start_date_string(pp)
@@ -116,7 +112,6 @@ def _step_pay_period() -> int:
                 f"Detected pay period {c(str(pp), Color.BOLD + Color.CYAN)}"
                 f"  {c(f'{start}  →  {end}', Color.DIM)}"
             )
-            _blank()
             return pp
         _warn("System time falls outside all known pay periods — switching to manual entry.")
         _blank()
@@ -148,7 +143,6 @@ def _step_missed_days(first: str, last: str, pay_period: int) -> None:
     _section(3, 3, "Missed Days")
 
     if not _yn("Did you miss any days this pay period?"):
-        _blank()
         _info("No missed days — all slots will be filled.")
         return
 
@@ -159,7 +153,7 @@ def _step_missed_days(first: str, last: str, pay_period: int) -> None:
     keys    = list(day_map)
 
     print(c("  Available days:", Color.DIM))
-    print("  " + c("  |  ", Color.DIM).join(c(k, Color.YELLOW + Color.BOLD) for k in keys))
+    print("  " + c(" | ", Color.DIM).join(c(k, Color.YELLOW + Color.BOLD) for k in keys))
     _blank()
 
     while True:
