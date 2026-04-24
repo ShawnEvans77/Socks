@@ -13,7 +13,6 @@ from src.utils.database import (
     parse_year,
 )
 
-
 class DatabaseTestCase(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

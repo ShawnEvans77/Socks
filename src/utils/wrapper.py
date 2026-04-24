@@ -9,7 +9,6 @@ from .database import (
 )
 import re
 
-
 # ─── ANSI Colors ──────────────────────────────────────────────────────────────
 
 class Color:
