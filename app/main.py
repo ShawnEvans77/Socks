@@ -19,6 +19,9 @@ def c(text: str, *codes: str) -> str:
 class QuitApp(Exception):
     pass
 
+class BackApp(Exception):
+    pass
+
 
 # ─── UI Primitives ────────────────────────────────────────────────────────────
 
@@ -42,12 +45,15 @@ def _section(step: int, total: int, title: str) -> None:
     _blank()
 
 def _prompt(label: str, hint: str = "") -> str:
-    """Styled input. Raises QuitApp if user types 'q'."""
+    """Styled input. Raises control-flow exceptions for q/back commands."""
     if hint:
         print(c(f"  ({hint})", Color.DIM))
     raw = input(c(f"  ▶ {label}: ", Color.CYAN)).strip()
-    if raw.lower() == "q":
+    command = raw.lower()
+    if command == "q":
         raise QuitApp
+    if command == "b":
+        raise BackApp
     return raw
 
 def _yn(label: str) -> bool:
@@ -76,7 +82,7 @@ def _banner() -> None:
         print(c(line, Color.CYAN + Color.BOLD))
     _blank()
     _rule("═")
-    print(c("  Type q at any prompt to quit.", Color.DIM))
+    print(c("  [q] at anytime to quit. [b] to go back", Color.DIM))
     _rule("═")
 
 
@@ -209,18 +215,35 @@ def _detect_pay_period() -> int | None:
 
 def main():
     _banner()
+    step = 1
+    first = None
+    last = None
+    pay_period = None
 
     try:
-        first, last = _step_employee()
-        pay_period  = _step_pay_period()
-        _step_missed_days(first, last, pay_period)
-        file_name   = _generate(first, last, pay_period)
+        while True:
+            try:
+                if step == 1:
+                    first, last = _step_employee()
+                    step = 2
+                elif step == 2:
+                    pay_period = _step_pay_period()
+                    step = 3
+                elif step == 3:
+                    _step_missed_days(first, last, pay_period)
+                    file_name = _generate(first, last, pay_period)
 
-        _success(f"Saved  →  {c(file_name, Color.BOLD + Color.WHITE)}")
-        _rule()
-        print(f"  {c(f'Thanks for using Socks, {first.title()}! 🧦', Color.CYAN + Color.BOLD)}")
-        _rule()
-        _blank()
+                    _success(f"Saved  →  {c(file_name, Color.BOLD + Color.WHITE)}")
+                    _rule()
+                    print(f"  {c(f'Thanks for using Socks, {first.title()}! 🧦', Color.CYAN + Color.BOLD)}")
+                    _rule()
+                    _blank()
+                    return
+            except BackApp:
+                if step > 1:
+                    step -= 1
+                else:
+                    _info("Already at the first step.")
 
     except QuitApp:
         _blank()
