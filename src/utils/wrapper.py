@@ -65,7 +65,7 @@ class Wrapper:
 
             self.cur.execute(
                 "SELECT pay_period, start_date FROM payroll_schedule WHERE start_date=?",
-                (start_date.strftime("%Y-%m-%d"),),
+                (start_str,),
             )
             conflict = self.cur.fetchall()
             if conflict:
@@ -75,7 +75,7 @@ class Wrapper:
             end_date = start_date + d.timedelta(days=13)
             self.cur.execute(
                 "INSERT INTO payroll_schedule(pay_period,start_date,end_date) VALUES(?,?,?);",
-                (pay_period, start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")),
+                (pay_period, start_str, end_date.strftime("%m/%d/%Y")),
             )
             self.con.commit()
             self._success(f"Pay period {pay_period} added.")
@@ -89,7 +89,7 @@ class Wrapper:
         self._header("Invalid Date Creation", "CREATE")
         try:
             date_str  = Wrapper.fetch_date("Invalid date to add")
-            db_str    = d.datetime.strptime(date_str, "%m/%d/%Y").strftime("%Y-%m-%d")
+            db_str    = date_str
 
             self.cur.execute("SELECT invalid_dates FROM days_off WHERE invalid_dates=?", (db_str,))
             if self.cur.fetchall():
@@ -108,7 +108,7 @@ class Wrapper:
     # ── READ ──────────────────────────────────────────────────────────────────
 
     def read_pay_period_start_end(self):
-        self.cur.execute("SELECT * FROM payroll_schedule")
+        self.cur.execute("SELECT * FROM payroll_schedule ORDER BY CAST(pay_period AS INTEGER)")
         rows = self.cur.fetchall()
 
         h_period = c(" Period ", Color.BOLD)
@@ -136,7 +136,12 @@ class Wrapper:
         print()
 
     def read_invalid_dates(self):
-        self.cur.execute("SELECT * FROM days_off;")
+        self.cur.execute(
+            """
+            SELECT * FROM days_off
+            ORDER BY substr(invalid_dates, 7, 4), substr(invalid_dates, 1, 2), substr(invalid_dates, 4, 2)
+            """
+        )
         rows = self.cur.fetchall()
 
         border = c("  ┌─────────────┐", Color.DIM)
@@ -171,7 +176,7 @@ class Wrapper:
                 self._error(f"Pay period {pay_period} does not exist.")
                 return
 
-            old = d.datetime.strptime(row[0][1], "%Y-%m-%d").strftime("%m/%d/%Y")
+            old = row[0][1]
             print(f"    {c('Current start date:', Color.DIM)} {c(old, Color.YELLOW)}")
 
             start_str = Wrapper.fetch_date(f"New start date for pay period {pay_period}")
@@ -179,7 +184,7 @@ class Wrapper:
 
             self.cur.execute(
                 "SELECT pay_period FROM payroll_schedule WHERE start_date=?",
-                (start_date.strftime("%Y-%m-%d"),),
+                (start_str,),
             )
             conflict = self.cur.fetchall()
             if conflict:
@@ -189,7 +194,7 @@ class Wrapper:
             end_date = start_date + d.timedelta(days=13)
             self.cur.execute(
                 "UPDATE payroll_schedule SET start_date=?, end_date=? WHERE pay_period=?",
-                (start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"), pay_period),
+                (start_str, end_date.strftime("%m/%d/%Y"), pay_period),
             )
             self.con.commit()
             self._success(f"Pay period {pay_period}: {old} {c('→', Color.DIM)} {start_str}")
@@ -203,7 +208,7 @@ class Wrapper:
         self._header("Invalid Date Update", "UPDATE")
         try:
             date_str   = Wrapper.fetch_date("Date to change")
-            db_str     = d.datetime.strptime(date_str, "%m/%d/%Y").strftime("%Y-%m-%d")
+            db_str     = date_str
 
             self.cur.execute("SELECT invalid_dates FROM days_off WHERE invalid_dates=?", (db_str,))
             if not self.cur.fetchall():
@@ -211,7 +216,7 @@ class Wrapper:
                 return
 
             new_str_in = Wrapper.fetch_date(f"Replacement for {c(date_str, Color.YELLOW)}")
-            new_db_str = d.datetime.strptime(new_str_in, "%m/%d/%Y").strftime("%Y-%m-%d")
+            new_db_str = new_str_in
 
             self.cur.execute("SELECT invalid_dates FROM days_off WHERE invalid_dates=?", (new_db_str,))
             if self.cur.fetchall():
@@ -234,6 +239,37 @@ class Wrapper:
     def delete_pay_period(self):
         self._header("Pay Period Deletion", "DELETE")
         try:
+            if Wrapper._confirm("Remove all pay periods fully inside a specific year?"):
+                year = Wrapper.fetch_year("Year to delete")
+                self.cur.execute(
+                    """
+                    SELECT pay_period, start_date, end_date
+                    FROM payroll_schedule
+                    WHERE start_date LIKE ? AND end_date LIKE ?
+                    ORDER BY CAST(pay_period AS INTEGER)
+                    """,
+                    (f"__/__/{year}", f"__/__/{year}"),
+                )
+                rows = self.cur.fetchall()
+
+                if not rows:
+                    self._error(f"No pay periods found fully inside {year}.")
+                    return
+
+                count = len(rows)
+                if Wrapper._confirm(
+                    f"Permanently delete {count} pay period(s) fully inside {c(year, Color.YELLOW)}?"
+                ):
+                    self.con.execute(
+                        "DELETE FROM payroll_schedule WHERE start_date LIKE ? AND end_date LIKE ?",
+                        (f"__/__/{year}", f"__/__/{year}"),
+                    )
+                    self.con.commit()
+                    self._success(f"Deleted {count} pay period(s) fully inside {year}.")
+                else:
+                    self._cancelled()
+                return
+
             pay_period = Wrapper.fetch_period("Pay period to delete")
             self.cur.execute(
                 "SELECT pay_period FROM payroll_schedule WHERE pay_period=?", (pay_period,)
@@ -257,8 +293,31 @@ class Wrapper:
     def delete_invalid_date(self):
         self._header("Invalid Date Deletion", "DELETE")
         try:
+            if Wrapper._confirm("Remove all invalid dates for a specific year?"):
+                year = Wrapper.fetch_year("Year to delete")
+                self.cur.execute(
+                    "SELECT invalid_dates FROM days_off WHERE invalid_dates LIKE ? ORDER BY invalid_dates",
+                    (f"__/__/{year}",),
+                )
+                rows = self.cur.fetchall()
+
+                if not rows:
+                    self._error(f"No invalid dates found for {year}.")
+                    return
+
+                count = len(rows)
+                if Wrapper._confirm(
+                    f"Permanently delete {count} invalid date(s) from {c(year, Color.YELLOW)}?"
+                ):
+                    self.con.execute("DELETE FROM days_off WHERE invalid_dates LIKE ?", (f"__/__/{year}",))
+                    self.con.commit()
+                    self._success(f"Deleted {count} invalid date(s) from {year}.")
+                else:
+                    self._cancelled()
+                return
+
             date_str = Wrapper.fetch_date("Invalid date to delete")
-            db_str   = d.datetime.strptime(date_str, "%m/%d/%Y").strftime("%Y-%m-%d")
+            db_str   = date_str
 
             self.cur.execute("SELECT invalid_dates FROM days_off WHERE invalid_dates=?", (db_str,))
             if not self.cur.fetchall():
@@ -313,10 +372,33 @@ class Wrapper:
                 raise GoBack
             if raw.lower() == "q":
                 raise QuitApp
-            if re.search(pattern, raw):
-                return raw
+            if not re.fullmatch(pattern, raw):
+                Wrapper._warn(f"'{raw}' is not a valid MM/DD/YYYY date.")
+                continue
 
-            Wrapper._warn(f"'{raw}' is not a valid MM/DD/YYYY date.")
+            try:
+                parsed = d.datetime.strptime(raw, "%m/%d/%Y")
+            except ValueError:
+                Wrapper._warn(f"'{raw}' is not a real calendar date.")
+                continue
+
+            return parsed.strftime("%m/%d/%Y")
+
+    @staticmethod
+    def fetch_year(prompt: str) -> str:
+        """Prompt for a four-digit year. Raises GoBack or QuitApp on escape."""
+        while True:
+            raw = Wrapper._prompt(prompt, hint="YYYY")
+
+            if raw.lower() == "b":
+                raise GoBack
+            if raw.lower() == "q":
+                raise QuitApp
+            if not re.fullmatch(r"(19|20)\d\d", raw):
+                Wrapper._warn("Year must be a four-digit year between 1900 and 2099.")
+                continue
+
+            return raw
 
     @staticmethod
     def insertable_period(pay_period: str) -> bool:
@@ -325,20 +407,24 @@ class Wrapper:
     @staticmethod
     def _confirm(message: str) -> bool:
         """Ask the user to confirm a destructive action. Returns True only on 'y'."""
-        print(f"\n    {c('⚠  ' + message, Color.YELLOW)}")
+        print(f"    {c('⚠  ' + message, Color.YELLOW)}")
         while True:
             raw = input(c("    Confirm [y/n]: ", Color.DIM)).strip().lower()
             if raw in ("y", "yes"):
                 return True
-            if raw in ("n", "no", "b", "q", ""):
+            if raw == "q":
+                raise QuitApp
+            if raw == "b":
+                raise GoBack
+            if raw in ("n", "no", ""):
                 return False
             Wrapper._warn("Please enter y or n.")
 
     @staticmethod
     def _prompt(label: str, hint: str = "") -> str:
-        """Render a styled input prompt with navigation hints."""
-        nav = c(f"  ({hint})  ", Color.DIM) + c("[b]", Color.YELLOW) + c(" back  ", Color.DIM) + c("[q]", Color.RED) + c(" quit", Color.DIM)
-        print(nav)
+        """Render a styled input prompt with an optional format hint."""
+        if hint:
+            print(c(f"  ({hint})", Color.DIM))
         return input(c(f"  ▶ {label}: ", Color.CYAN)).strip()
 
     # ─── Display Helpers ──────────────────────────────────────────────────────

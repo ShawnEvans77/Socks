@@ -29,7 +29,6 @@ def menu():
     def opt(key: str, label: str, color: str) -> str:
         return c(f"  {key}", color + Color.BOLD) + c(f"  {label}", Color.RESET)
 
-    print()
     print(top)
     print(_row(title))
     print(_row(hint))
@@ -44,12 +43,10 @@ def menu():
     print(_row(opt("5", "Update Pay Period",        Color.YELLOW)))
     print(_row(opt("6", "Update Invalid Date",      Color.YELLOW)))
     print(_row(group("  DELETE", Color.RED)))
-    print(_row(opt("7", "Delete Pay Period",        Color.RED)))
-    print(_row(opt("8", "Delete Invalid Date",      Color.RED)))
+    print(_row(opt("7", "Delete Pay Period(s)",     Color.RED)))
+    print(_row(opt("8", "Delete Invalid Date(s)",   Color.RED)))
     print(div)
-    print(_row(c("  m", Color.DIM + Color.BOLD) + c("  Show menu", Color.DIM) +
-               "    " +
-               c("  q", Color.RED + Color.BOLD) + c("  Quit", Color.DIM)))
+    print(_row(c("  m", Color.DIM + Color.BOLD) + c("  Show menu", Color.DIM)))
     print(bot)
     print()
 
