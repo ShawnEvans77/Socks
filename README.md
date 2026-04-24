@@ -14,57 +14,75 @@ pip install -r requirements.txt
 ```
 $ py -m app.main
 
-*********************************************************
-(🧦) Welcome to Socks (🧦)
 
-Please enter your first name: shawn
-Please enter your last name: evans
+  ███████╗  ██████╗  ██████╗██╗  ██╗███████╗
+  ██╔════╝ ██╔═══██╗██╔════╝██║ ██╔╝██╔════╝
+  ███████╗ ██║   ██║██║     █████╔╝ ███████╗ 
+  ╚════██║ ██║   ██║██║     ██╔═██╗ ╚════██║ 
+  ███████║ ╚██████╔╝╚██████╗██║  ██╗███████║ 
+  ╚══════╝  ╚═════╝  ╚═════╝╚═╝  ╚═╝╚══════╝ 
 
-Automatically select pay period? (y/n): y
-Socks has determined the current pay period is 26, starting at 02/08 and ending at 02/21.
+  ══════════════════════════════════════════════════
+  [q] at anytime to quit. [b] to go back
+  ══════════════════════════════════════════════════
 
-Did you miss any days this week? (y/n): y
+  ──────────────────────────────────────────────────
+  [1/3]  Employee
+  ──────────────────────────────────────────────────
 
-Pay Period 26 Days: 
-02/08 | 02/09 | 02/10 | 02/11 | 02/12 | 02/13 | 02/14 | 02/15 | 02/16 | 02/17 | 02/18 | 02/19 | 02/20 | 02/21
+  ▶ First name: shawn
+  ▶ Last name: evans
+  ✔  Welcome, Shawn Evans!
 
-Which days from this week did you miss?: 02/12 02/15
+  ──────────────────────────────────────────────────
+  [2/3]  Pay Period
+  ──────────────────────────────────────────────────
 
-Your missed days have been accounted for, generating time sheet with missed days left blank...
-*********************************************************
+  (y / n)
+  ▶ Auto-detect current pay period?: y
+  ℹ  Detected pay period 5  04/19  →  05/02
 
-Shawn, your timesheet has been generated in the timesheet folder.
+  ──────────────────────────────────────────────────
+  [3/3]  Missed Days
+  ──────────────────────────────────────────────────
 
-Thank you for using (🧦) Socks (🧦)!
-*********************************************************
+  (y / n)
+  ▶ Did you miss any days this pay period?: n
+  ℹ  No missed days — all slots will be filled.
+
+  ══════════════════════════════════════════════════
+  Generating timesheet...
+  ══════════════════════════════════════════════════
+
+  ✔  Saved  →  Evans_Timesheet_5.pdf
+  ──────────────────────────────────────────────────
+  Thanks for using Socks, Shawn! 🧦
+  ──────────────────────────────────────────────────
 ```
 
 The application uses an SQLite based database, socks.db, stored in the resources directory. This database can be queried easily through the execution of crud.py. 
 
 ```
 $ py -m app.crud
-
-******************************************************
-Welcome to Socks (🧦) C.R.U.D interface! What would you like to do? 
-1. Create a new Pay Period
-2. Create an Invalid Date
-3. Read Pay Period Start & End Dates
-4. Read Invalid Dates
-5. Update a Pay Period
-6. Update an Invalid Date
-7. Delete a Pay Period
-8. Delete Invalid Date
-m. View Menu
-q. Quit
-******************************************************
-Please type your selection: 3
-
-----------------------------------------
-| pay period | start date | end date   |
-----------------------------------------
-| 20         | 2025-11-16 | 2025-11-29 |
-| 21         | 2025-11-30 | 2025-12-13 |
----------------------------------------
+  ╔════════════════════════════════════════════╗
+  ║ 🧦  SOCKS CRUD INTERFACE                   ║
+  ║ [b] back inside any operation  [q] quit    ║
+  ╠════════════════════════════════════════════╣
+  ║   CREATE                                   ║
+  ║   1  New Pay Period                        ║
+  ║   2  New Invalid Date                      ║
+  ║   READ                                     ║
+  ║   3  View Pay Period Schedule              ║
+  ║   4  View Invalid Dates                    ║
+  ║   UPDATE                                   ║
+  ║   5  Update Pay Period                     ║
+  ║   6  Update Invalid Date                   ║
+  ║   DELETE                                   ║
+  ║   7  Delete Pay Period(s)                  ║
+  ║   8  Delete Invalid Date(s)                ║
+  ╠════════════════════════════════════════════╣
+  ║   m  Show menu                             ║
+  ╚════════════════════════════════════════════╝
 ```
 
 Schedules are stored in schedules.json.
@@ -86,6 +104,13 @@ Schedules are stored in schedules.json.
         }
     ]
 }
+```
+
+# Tests
+To test the application, type:
+
+```
+python -m unittest discover -s tests
 ```
 
 ## Motivation
