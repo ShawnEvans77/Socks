@@ -8,8 +8,8 @@
                 "sunday": ["", ""],
                 "monday": ["1PM", "4PM"],
                 "tuesday": ["", ""],
-                "wednesday": ["12PM", "2PM"],
-                "thursday": ["3PM", "6PM"],
+                "wednesday": ["12PM", "3PM"],
+                "thursday": ["12PM", "3PM"],
                 "friday": ["",""],
                 "saturday": ["",""]
             }
