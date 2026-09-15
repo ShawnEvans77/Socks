@@ -46,10 +46,11 @@ class QuitApp(Exception):
 # ─── Wrapper ──────────────────────────────────────────────────────────────────
 
 class Wrapper:
-    """SQLite3 wrapper supporting CRUD for payroll_schedule and days_off."""
+    """SQLite3 wrapper supporting CRUD for payroll schedules and invalid dates."""
 
     def __init__(self):
         self.db = SocksDatabase()
+        self.db.ensure_schema()
 
     # ── CREATE ────────────────────────────────────────────────────────────────
 
@@ -58,7 +59,9 @@ class Wrapper:
         try:
             pay_period = Wrapper.fetch_period("Pay period to add")
             start_str = Wrapper.fetch_date("Start date for this pay period")
-            self.db.create_pay_period(pay_period, start_str)
+            due_date = Wrapper.fetch_date("Timesheet due in payroll")
+            pay_date = Wrapper.fetch_date("Pay date")
+            self.db.create_pay_period(pay_period, start_str, due_date, pay_date)
             self._success(f"Pay period {pay_period} added.")
 
         except GoBack:
@@ -90,23 +93,30 @@ class Wrapper:
         h_period = c(" Period ", Color.BOLD)
         h_start  = c(" Start Date ", Color.BOLD)
         h_end    = c(" End Date   ", Color.BOLD)
+        h_due    = c(" Due Date    ", Color.BOLD)
+        h_pay    = c(" Pay Date    ", Color.BOLD)
 
-        border = c("  ┌──────────┬─────────────┬─────────────┐", Color.DIM)
-        mid    = c("  ├──────────┼─────────────┼─────────────┤", Color.DIM)
-        foot   = c("  └──────────┴─────────────┴─────────────┘", Color.DIM)
+        border = c("  ┌──────────┬─────────────┬─────────────┬─────────────┬─────────────┐", Color.DIM)
+        mid    = c("  ├──────────┼─────────────┼─────────────┼─────────────┼─────────────┤", Color.DIM)
+        foot   = c("  └──────────┴─────────────┴─────────────┴─────────────┴─────────────┘", Color.DIM)
         sep    = c("│", Color.DIM)
 
         print()
         print(c("  Pay Period Schedule", Color.BOLD + Color.CYAN))
         print(border)
-        print(f"  {sep}{_pad(h_period,10)}{sep}{_pad(h_start,13)}{sep}{_pad(h_end,13)}{sep}")
+        print(
+            f"  {sep}{_pad(h_period,10)}{sep}{_pad(h_start,13)}{sep}"
+            f"{_pad(h_end,13)}{sep}{_pad(h_due,13)}{sep}{_pad(h_pay,13)}{sep}"
+        )
         print(mid)
 
         for row in rows:
             period_s = f" {int(row.pay_period):<8d}"
             start_s  = f" {row.start_date:<11}"
             end_s    = f" {row.end_date:<11}"
-            print(f"  {sep}{period_s} {sep}{start_s} {sep}{end_s} {sep}")
+            due_s    = f" {row.due_date:<11}"
+            pay_s    = f" {row.pay_date:<11}"
+            print(f"  {sep}{period_s} {sep}{start_s} {sep}{end_s} {sep}{due_s} {sep}{pay_s} {sep}")
 
         print(foot)
         print()
@@ -138,7 +148,9 @@ class Wrapper:
         try:
             pay_period = Wrapper.fetch_period("Pay period to update")
             start_str = Wrapper.fetch_date(f"New start date for pay period {pay_period}")
-            self.db.update_pay_period(pay_period, start_str)
+            due_date = Wrapper.fetch_date("New timesheet due date")
+            pay_date = Wrapper.fetch_date("New pay date")
+            self.db.update_pay_period(pay_period, start_str, due_date, pay_date)
             self._success(f"Pay period {pay_period} updated.")
 
         except GoBack:
