@@ -234,6 +234,11 @@ def main():
                     file_name = _generate(first, last, pay_period)
 
                     _success(f"Saved  →  {c(file_name, Color.BOLD + Color.WHITE)}")
+                    pay_table = guide.Tables.pay_table.value
+                    _info(
+                        f"Timesheet is due on {c(pay_table.due_date_string(pay_period), Color.BOLD)}. "
+                        f"You will be paid on {c(pay_table.pay_date_string(pay_period), Color.BOLD)}."
+                    )
                     _rule()
                     print(f"  {c(f'Thanks for using Socks, {first.title()}! 🧦', Color.CYAN + Color.BOLD)}")
                     _rule()

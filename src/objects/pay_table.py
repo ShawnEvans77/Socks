@@ -1,4 +1,5 @@
-from ..constants import filenames, guide
+from ..constants import filenames
+from ..utils.database import SocksDatabase
 from typing import List
 import sqlite3, datetime as d
 
@@ -11,18 +12,23 @@ class PayTable:
     """
 
     def __init__(self):
+        SocksDatabase().ensure_schema()
         self.con = sqlite3.connect(f"{filenames.asset_folder}/{filenames.database_folder}/{filenames.database_name}")
         self.cur = self.con.cursor()
         self.pay_dict = {}
+        self.payment_dict = {}
         self.invalid_dates = []
 
-        res = self.cur.execute("SELECT pay_period, start_date, end_date FROM payroll_schedule;")
+        res = self.cur.execute(
+            "SELECT pay_period, start_date, end_date, due_date, pay_date FROM payroll_schedule;"
+        )
         matrix = res.fetchall()
 
         for tuple in matrix:
             pay_period = int(tuple[0])
             start, end = d.datetime.strptime(str(tuple[1]), "%m/%d/%Y"), d.datetime.strptime(str(tuple[2]), "%m/%d/%Y")
             self.pay_dict[pay_period] = (start, end)
+            self.payment_dict[pay_period] = (str(tuple[3]), str(tuple[4]))
 
         res = self.cur.execute("SELECT * FROM days_off;")
         matrix = res.fetchall()
@@ -46,6 +52,8 @@ class PayTable:
 
     def get_period_dates(self, pay_period: int) -> List[d.datetime]:
         """Returns a list of datetime objects representing the days in a given pay period."""
+
+        from ..constants import guide
 
         list = []
 
@@ -78,6 +86,16 @@ class PayTable:
         '''Given a pay_period, return its conclusion as a string.'''
 
         return PayTable.date_str(self.pay_dict[pay_period][1])
+
+    def due_date_string(self, pay_period: int) -> str:
+        """Return the payroll submission deadline for a pay period."""
+
+        return self.payment_dict[pay_period][0]
+
+    def pay_date_string(self, pay_period: int) -> str:
+        """Return the employee payment date for a pay period."""
+
+        return self.payment_dict[pay_period][1]
     
     def date_offset_string(self, pay_period: int, offset: int) -> str:
         '''Given a pay period, add an offset number of days to its start date, then return it as a string.'''

@@ -31,6 +31,8 @@ class PayPeriod:
     pay_period: str
     start_date: str
     end_date: str
+    due_date: str
+    pay_date: str
 
 
 def default_database_path() -> str:
@@ -109,25 +111,46 @@ class SocksDatabase:
         with self.connection() as con:
             cur = con.cursor()
             cur.execute(
-                "CREATE TABLE IF NOT EXISTS payroll_schedule(pay_period TEXT, start_date TEXT, end_date TEXT)"
+                """
+                CREATE TABLE IF NOT EXISTS payroll_schedule(
+                    pay_period TEXT,
+                    start_date TEXT,
+                    end_date TEXT,
+                    due_date TEXT,
+                    pay_date TEXT
+                )
+                """
             )
             cur.execute("CREATE TABLE IF NOT EXISTS days_off(invalid_dates TEXT)")
 
+            columns = {
+                row[1] for row in cur.execute("PRAGMA table_info(payroll_schedule)").fetchall()
+            }
+            due_column = "due_date" if "due_date" in columns else "''"
+            pay_column = "pay_date" if "pay_date" in columns else "''"
+
             pay_rows = cur.execute(
-                "SELECT rowid, pay_period, start_date, end_date FROM payroll_schedule ORDER BY rowid"
+                f"""
+                SELECT rowid, pay_period, start_date, end_date,
+                       {due_column} AS due_date, {pay_column} AS pay_date
+                FROM payroll_schedule
+                ORDER BY rowid
+                """
             ).fetchall()
             invalid_rows = cur.execute(
                 "SELECT rowid, invalid_dates FROM days_off ORDER BY rowid"
             ).fetchall()
 
             unique_pay = {}
-            for _, pay_period, start_date, end_date in pay_rows:
+            for _, pay_period, start_date, end_date, due_date, pay_date in pay_rows:
                 period = parse_pay_period(str(pay_period))
                 if period not in unique_pay:
                     unique_pay[period] = (
                         period,
                         parse_existing_date(str(start_date)),
                         parse_existing_date(str(end_date)),
+                        parse_existing_date(str(due_date)) if due_date else "",
+                        parse_existing_date(str(pay_date)) if pay_date else "",
                     )
 
             unique_invalid = []
@@ -145,7 +168,9 @@ class SocksDatabase:
                 CREATE TABLE payroll_schedule(
                     pay_period TEXT NOT NULL UNIQUE,
                     start_date TEXT NOT NULL,
-                    end_date TEXT NOT NULL
+                    end_date TEXT NOT NULL,
+                    due_date TEXT NOT NULL DEFAULT '',
+                    pay_date TEXT NOT NULL DEFAULT ''
                 )
                 """
             )
@@ -157,7 +182,10 @@ class SocksDatabase:
                 """
             )
             cur.executemany(
-                "INSERT INTO payroll_schedule(pay_period,start_date,end_date) VALUES(?,?,?)",
+                """
+                INSERT INTO payroll_schedule(pay_period,start_date,end_date,due_date,pay_date)
+                VALUES(?,?,?,?,?)
+                """,
                 sorted(unique_pay.values(), key=lambda row: int(row[0])),
             )
             cur.executemany("INSERT INTO days_off(invalid_dates) VALUES(?)", unique_invalid)
@@ -166,7 +194,7 @@ class SocksDatabase:
         with self.connection() as con:
             rows = con.execute(
                 """
-                SELECT pay_period, start_date, end_date
+                SELECT pay_period, start_date, end_date, due_date, pay_date
                 FROM payroll_schedule
                 ORDER BY CAST(pay_period AS INTEGER)
                 """
@@ -186,10 +214,14 @@ class SocksDatabase:
 
         return [row[0] for row in rows]
 
-    def create_pay_period(self, pay_period: str, start_date: str) -> PayPeriod:
+    def create_pay_period(
+        self, pay_period: str, start_date: str, due_date: str, pay_date: str
+    ) -> PayPeriod:
         period = parse_pay_period(pay_period)
         start = parse_date(start_date)
         end = add_period_end(start)
+        due = parse_date(due_date)
+        pay = parse_date(pay_date)
 
         with self.connection() as con:
             cur = con.cursor()
@@ -198,16 +230,23 @@ class SocksDatabase:
             if cur.execute("SELECT pay_period FROM payroll_schedule WHERE start_date=?", (start,)).fetchone():
                 raise DuplicateError(f"Start date {start} already exists.")
             cur.execute(
-                "INSERT INTO payroll_schedule(pay_period,start_date,end_date) VALUES(?,?,?)",
-                (period, start, end),
+                """
+                INSERT INTO payroll_schedule(pay_period,start_date,end_date,due_date,pay_date)
+                VALUES(?,?,?,?,?)
+                """,
+                (period, start, end, due, pay),
             )
 
-        return PayPeriod(period, start, end)
+        return PayPeriod(period, start, end, due, pay)
 
-    def update_pay_period(self, pay_period: str, start_date: str) -> PayPeriod:
+    def update_pay_period(
+        self, pay_period: str, start_date: str, due_date: str, pay_date: str
+    ) -> PayPeriod:
         period = parse_pay_period(pay_period)
         start = parse_date(start_date)
         end = add_period_end(start)
+        due = parse_date(due_date)
+        pay = parse_date(pay_date)
 
         with self.connection() as con:
             cur = con.cursor()
@@ -222,11 +261,15 @@ class SocksDatabase:
                 raise DuplicateError(f"Start date {start} belongs to pay period {conflict[0]}.")
 
             cur.execute(
-                "UPDATE payroll_schedule SET start_date=?, end_date=? WHERE pay_period=?",
-                (start, end, period),
+                """
+                UPDATE payroll_schedule
+                SET start_date=?, end_date=?, due_date=?, pay_date=?
+                WHERE pay_period=?
+                """,
+                (start, end, due, pay, period),
             )
 
-        return PayPeriod(period, start, end)
+        return PayPeriod(period, start, end, due, pay)
 
     def delete_pay_period(self, pay_period: str) -> None:
         period = parse_pay_period(pay_period)

@@ -74,16 +74,20 @@ class DatabaseTestCase(unittest.TestCase):
                 con.close()
 
     def test_pay_period_create_update_delete(self):
-        period = self.db.create_pay_period("1", "01/01/2026")
+        period = self.db.create_pay_period("1", "01/01/2026", "01/16/2026", "01/30/2026")
 
         self.assertEqual(period.start_date, "01/01/2026")
         self.assertEqual(period.end_date, "01/14/2026")
+        self.assertEqual(period.due_date, "01/16/2026")
+        self.assertEqual(period.pay_date, "01/30/2026")
 
         with self.assertRaises(DuplicateError):
-            self.db.create_pay_period("1", "01/15/2026")
+            self.db.create_pay_period("1", "01/15/2026", "01/30/2026", "02/13/2026")
 
-        updated = self.db.update_pay_period("1", "01/15/2026")
+        updated = self.db.update_pay_period("1", "01/15/2026", "01/30/2026", "02/13/2026")
         self.assertEqual(updated.end_date, "01/28/2026")
+        self.assertEqual(updated.due_date, "01/30/2026")
+        self.assertEqual(updated.pay_date, "02/13/2026")
 
         self.db.delete_pay_period("1")
         self.assertEqual(self.db.list_pay_periods(), [])
