@@ -79,18 +79,19 @@ py -m crud.crud
   ║   CREATE                                   ║
   ║   1  New Pay Period                        ║
   ║   2  New Invalid Date                      ║
+  ║   3  New Employee                          ║
   ║   READ                                     ║
-  ║   3  View Pay Period Schedule              ║
-  ║   4  View Invalid Dates                    ║
-  ║   5  View Employee Names & EMPLIDs         ║
-  ║   6  View Employee Schedules               ║
+  ║   4  View Pay Period Schedule              ║
+  ║   5  View Invalid Dates                    ║
+  ║   6  View Employee Names & EMPLIDs         ║
+  ║   7  View Employee Schedules               ║
   ║   UPDATE                                   ║
-  ║   7  Update Pay Period                     ║
-  ║   8  Update Invalid Date                   ║
-  ║   9  Update Employee Schedule              ║
+  ║   8  Update Pay Period                     ║
+  ║   9  Update Invalid Date                   ║
+  ║  10  Update Employee Schedule              ║
   ║   DELETE                                   ║
-  ║  10  Delete Pay Period(s)                  ║
-  ║  11  Delete Invalid Date(s)                ║
+  ║  11  Delete Pay Period(s)                  ║
+  ║  12  Delete Invalid Date(s)                ║
   ╠════════════════════════════════════════════╣
   ║   m  Show menu                             ║
   ╚════════════════════════════════════════════╝
@@ -98,6 +99,7 @@ py -m crud.crud
 
 ## Notes
 - Data is stored in `resources/database/socks.db`. 
+- CRUD can add employees with required EMPLIDs and seven-day schedules, including split shifts.
 - Employees can have split shifts. Generated PDFs are flattened and include the EMPLID, Prepared by name, checked CA box, and department `885-54`.
 - Timesheets are saved in `timesheets`.
 
