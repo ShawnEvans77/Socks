@@ -1,98 +1,88 @@
 from src.utils import wrapper
-from src.utils.wrapper import QuitApp, Color, c
+from src.utils.terminal import Color, color as c, pad
+from src.utils.wrapper import QuitApp
 
-# ─── Menu ─────────────────────────────────────────────────────────────────────
 
-_W = 44  # visible box width (inner)
+_WIDTH = 44
+_MENU_GROUPS = (
+    ("CREATE", Color.GREEN, (
+        ("1", "New Pay Period", "create_pay_period"),
+        ("2", "New Invalid Date", "create_invalid_date"),
+        ("3", "New Employee", "create_employee"),
+    )),
+    ("READ", Color.BLUE, (
+        ("4", "View Pay Period Schedule", "read_pay_period_start_end"),
+        ("5", "View Invalid Dates", "read_invalid_dates"),
+        ("6", "Employee Names, EMPLIDs & Budgets", "read_employee_names_and_emplids"),
+        ("7", "View Employee Schedules", "read_employee_schedules"),
+    )),
+    ("UPDATE", Color.YELLOW, (
+        ("8", "Update Pay Period", "update_pay_period"),
+        ("9", "Update Invalid Date", "update_invalid_date"),
+        ("10", "Update Employee Schedule", "update_employee_schedule"),
+        ("11", "Update Employee Budget", "update_employee_budget"),
+    )),
+    ("DELETE", Color.RED, (
+        ("12", "Delete Pay Period(s)", "delete_pay_period"),
+        ("13", "Delete Invalid Date(s)", "delete_invalid_date"),
+    )),
+)
+_ACTIONS = {
+    key: method
+    for _, _, options in _MENU_GROUPS
+    for key, _, method in options
+}
+
 
 def _row(content: str = "") -> str:
-    """Build a ║…║ box row padded to _W visible chars."""
-    return c("  ║ ", Color.CYAN) + _pad(content, _W - 2) + c(" ║", Color.CYAN)
+    return c("  ║ ", Color.CYAN) + pad(content, _WIDTH - 2) + c(" ║", Color.CYAN)
 
-def _pad(s: str, width: int) -> str:
-    import re, unicodedata
-    stripped = re.sub(r"\033\[[0-9;]*m", "", s)
-    visible  = sum(2 if unicodedata.east_asian_width(ch) in ("W", "F") else 1 for ch in stripped)
-    return s + " " * max(0, width - visible)
 
-def menu():
-    top    = c("  ╔" + "═" * _W + "╗", Color.CYAN)
-    div    = c("  ╠" + "═" * _W + "╣", Color.CYAN)
-    bot    = c("  ╚" + "═" * _W + "╝", Color.CYAN)
+def _option(key: str, label: str, color: str) -> str:
+    return c(f"  {key}", color, Color.BOLD) + c(f"  {label}")
 
-    title  = c("🧦  SOCKS CRUD INTERFACE", Color.BOLD + Color.CYAN)
-    hint   = c("[b] back  [q] quit here  [exit()] quit all", Color.DIM)
 
-    def group(label: str, color: str) -> str:
-        return c(label, color + Color.BOLD)
+def menu() -> None:
+    print(c("  ╔" + "═" * _WIDTH + "╗", Color.CYAN))
+    print(_row(c("🧦  SOCKS CRUD INTERFACE", Color.BOLD, Color.CYAN)))
+    print(_row(c("[b] back  [q] quit here  [exit()] quit all", Color.DIM)))
 
-    def opt(key: str, label: str, color: str) -> str:
-        return c(f"  {key}", color + Color.BOLD) + c(f"  {label}", Color.RESET)
+    for title, group_color, options in _MENU_GROUPS:
+        print(c("  ╠" + "═" * _WIDTH + "╣", Color.CYAN))
+        print(_row(c(f"  {title}", group_color, Color.BOLD)))
+        for key, label, _ in options:
+            print(_row(_option(key, label, group_color)))
 
-    print(top)
-    print(_row(title))
-    print(_row(hint))
-    print(div)
-    print(_row(group("  CREATE", Color.GREEN)))
-    print(_row(opt("1", "New Pay Period",          Color.GREEN)))
-    print(_row(opt("2", "New Invalid Date",         Color.GREEN)))
-    print(_row(opt("3", "New Employee",              Color.GREEN)))
-    print(_row(group("  READ", Color.BLUE)))
-    print(_row(opt("4", "View Pay Period Schedule", Color.BLUE)))
-    print(_row(opt("5", "View Invalid Dates",       Color.BLUE)))
-    print(_row(opt("6", "View Employee Names & EMPLIDs", Color.BLUE)))
-    print(_row(opt("7", "View Employee Schedules",      Color.BLUE)))
-    print(_row(group("  UPDATE", Color.YELLOW)))
-    print(_row(opt("8", "Update Pay Period",          Color.YELLOW)))
-    print(_row(opt("9", "Update Invalid Date",        Color.YELLOW)))
-    print(_row(opt("10", "Update Employee Schedule",   Color.YELLOW)))
-    print(_row(group("  DELETE", Color.RED)))
-    print(_row(opt("11", "Delete Pay Period(s)",      Color.RED)))
-    print(_row(opt("12", "Delete Invalid Date(s)",    Color.RED)))
-    print(div)
-    print(_row(c("  m", Color.DIM + Color.BOLD) + c("  Show menu", Color.DIM)))
-    print(bot)
+    print(c("  ╠" + "═" * _WIDTH + "╣", Color.CYAN))
+    print(_row(c("  m  Show menu", Color.DIM, Color.BOLD)))
+    print(c("  ╚" + "═" * _WIDTH + "╝", Color.CYAN))
     print()
 
 
-# ─── Main ─────────────────────────────────────────────────────────────────────
-
-def main():
-    wp = wrapper.Wrapper()
+def main() -> None:
+    commands = wrapper.Wrapper()
     menu()
 
     while True:
         try:
             choice = input(c("  ▶ Selection: ", Color.CYAN)).strip().lower()
-            if choice == "exit()":
+            if choice in ("q", "exit()"):
                 raise QuitApp
-
-            match choice:
-                case "1": wp.create_pay_period()
-                case "2": wp.create_invalid_date()
-                case "3": wp.create_employee()
-                case "4": wp.read_pay_period_start_end()
-                case "5": wp.read_invalid_dates()
-                case "6": wp.read_employee_names_and_emplids()
-                case "7": wp.read_employee_schedules()
-                case "8": wp.update_pay_period()
-                case "9": wp.update_invalid_date()
-                case "10": wp.update_employee_schedule()
-                case "11": wp.delete_pay_period()
-                case "12": wp.delete_invalid_date()
-                case "m": menu()
-                case "q": raise QuitApp
-                case "":  pass
-                case _:
-                    print(f"  {c('⚠', Color.YELLOW)}  {c(repr(choice), Color.DIM)} is not a valid option.\n")
-
+            if choice == "m":
+                menu()
+            elif choice in _ACTIONS:
+                getattr(commands, _ACTIONS[choice])()
+            elif choice:
+                warning = c("⚠", Color.YELLOW)
+                invalid_choice = c(repr(choice), Color.DIM)
+                print(f"  {warning}  {invalid_choice} is not a valid option.\n")
         except QuitApp:
             break
         except KeyboardInterrupt:
             print()
             break
 
-    print(f"\n  {c('🧦  Goodbye!', Color.CYAN + Color.BOLD)}\n")
+    print(f"\n  {c('🧦  Goodbye!', Color.CYAN, Color.BOLD)}\n")
 
 
 if __name__ == "__main__":

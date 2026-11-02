@@ -49,11 +49,8 @@ py -m app.main
   ──────────────────────────────────────────────────
 
   (y / n)
-  ▶ Did you miss any days this pay period?: n
-  ℹ  No missed days — all slots will be filled.
-  (y / n)
-  ▶ Did you work an extra day or days this pay period?: n
-  ℹ  No extra days recorded.
+  ▶ Any notable changes to account for this week?: n
+  ℹ  No schedule changes. Using the saved schedule.
 
   ══════════════════════════════════════════════════
   Generating timesheet...
@@ -62,7 +59,7 @@ py -m app.main
   ✔  Saved  →  Evans_Timesheet_19.pdf
   ℹ  Timesheet is due on 11/16/2026. You will be paid on 12/10/2026.
   ──────────────────────────────────────────────────
-  Thanks for using Socks, Shawn! 🧦
+  Thanks for using Socks, Shawn!
   ──────────────────────────────────────────────────
 ```
 
@@ -73,7 +70,7 @@ py -m crud.crud
 
 ```text
 ╔════════════════════════════════════════════╗
-  ║ 🧦  SOCKS CRUD INTERFACE                   ║
+  ║  SOCKS CRUD INTERFACE                      ║
   ║ [b] back  [q] quit here  [exit()] quit all ║
   ╠════════════════════════════════════════════╣
   ║   CREATE                                   ║
@@ -83,15 +80,16 @@ py -m crud.crud
   ║   READ                                     ║
   ║   4  View Pay Period Schedule              ║
   ║   5  View Invalid Dates                    ║
-  ║   6  View Employee Names & EMPLIDs         ║
+  ║   6  Employee Names, EMPLIDs & Budgets     ║
   ║   7  View Employee Schedules               ║
   ║   UPDATE                                   ║
   ║   8  Update Pay Period                     ║
   ║   9  Update Invalid Date                   ║
   ║  10  Update Employee Schedule              ║
+  ║  11  Update Employee Budget                ║
   ║   DELETE                                   ║
-  ║  11  Delete Pay Period(s)                  ║
-  ║  12  Delete Invalid Date(s)                ║
+  ║  12  Delete Pay Period(s)                  ║
+  ║  13  Delete Invalid Date(s)                ║
   ╠════════════════════════════════════════════╣
   ║   m  Show menu                             ║
   ╚════════════════════════════════════════════╝
@@ -99,8 +97,11 @@ py -m crud.crud
 
 ## Notes
 - Data is stored in `resources/database/socks.db`. 
-- CRUD can add employees with required EMPLIDs and seven-day schedules, including split shifts.
-- Employees can have split shifts. Generated PDFs are flattened and include the EMPLID, Prepared by name, checked CA box, and department `885-54`.
+- The main app asks about schedule changes once. Answering `n` uses the saved schedule without asking about missed or extra days.
+- Answering `y` lets employees record missed days, missed split intervals, and extra workdays.
+- CRUD can add employees with required EMPLIDs, budgets, and seven-day schedules, including split shifts. Budgets can be updated through CRUD.
+- Employees can have split shifts. Generated PDFs are flattened and include the EMPLID, Prepared by name, checked CA box, and department number `885-<budget>`.
+- Existing employees default to budget `54`, producing department number `885-54`.
 - Timesheets are saved in `timesheets`.
 
 ## Tests
