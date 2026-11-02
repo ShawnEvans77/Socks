@@ -97,6 +97,7 @@ class SheetWriter:
         total_hours = 0
         invalid_dates = guide.Tables.pay_table.value.get_invalid_dates()
         missed_days = guide.Tables.schedule_table.value.get_missed_days(self.name)
+        extra_days = guide.Tables.schedule_table.value.get_extra_days(self.name)
 
         for i in range(len(guide.Indices.time_in_out_indices.value)):
 
@@ -110,10 +111,16 @@ class SheetWriter:
 
             schedule = guide.Tables.schedule_table.value.get(self.name)
 
-            time_in = schedule[j][0]
-            time_out = schedule[j][1]
+            extra_shift = extra_days.get(date)
+            if extra_shift:
+                time_in, time_out = extra_shift
+            else:
+                time_in, time_out = schedule[j]
 
-            if len(time_in) != 0 and date not in invalid_dates and date not in missed_days:
+            worked = bool(extra_shift) or (
+                bool(time_in) and date not in invalid_dates and date not in missed_days
+            )
+            if worked:
 
                 hours_worked_int = clock.Clock(time_in) - clock.Clock(time_out)
                 hours_worked_str = str(hours_worked_int)

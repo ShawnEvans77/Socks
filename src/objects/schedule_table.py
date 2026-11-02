@@ -9,6 +9,7 @@ class ScheduleTable:
     def __init__(self):
         self.schedule_dict = {}
         self.missed_days_dict = {}
+        self.extra_days_dict = {}
 
         with open(f"{filenames.asset_folder}/{filenames.json_folder}/{filenames.json_name}", "r") as file:
             data = json.load(file)
@@ -29,6 +30,7 @@ class ScheduleTable:
 
                 self.schedule_dict[name] = schedule
                 self.missed_days_dict[name] = {}
+                self.extra_days_dict[name] = {}
 
     def get(self, name: str) -> List[List]:
         '''Recieves a person's name as input, returns their schedule.'''
@@ -49,3 +51,13 @@ class ScheduleTable:
         '''Returns all of a person's missed days.'''
 
         return self.missed_days_dict[name.lower()]
+
+    def add_extra_days(self, name: str, extra_days: dict):
+        """Store worked hours keyed by date for the current timesheet."""
+
+        self.extra_days_dict[name.lower()] = dict(extra_days)
+
+    def get_extra_days(self, name: str) -> dict:
+        """Return manually entered hours keyed by date."""
+
+        return self.extra_days_dict[name.lower()]
