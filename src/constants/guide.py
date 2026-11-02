@@ -1,8 +1,9 @@
 from ..objects import pay_table as pt, schedule_table as st
 from enum import Enum
+from .payroll import DEFAULT_BUDGET, FIRST_PAY_PERIOD, LAST_PAY_PERIOD
 
 class Indices(Enum):
-    last_name_index, first_name_index = 6, 7 # SIX SEVEN!!! :3
+    last_name_index, first_name_index = 6, 7
     pay_period_index = 5
 
     dept_num_index = 1
@@ -33,16 +34,14 @@ class Indices(Enum):
 
 class LearningCenter(Enum):
     lc_dept_name = 'Learning Center'
-    lc_dept_num = '885-54'
+    lc_dept_prefix = '885'
+    default_budget = DEFAULT_BUDGET
     lc_ca_rate = '$19.12'
     lc_dept_ext = '5821'
 
-class WeekLength(Enum):
-    days_in_period = 14
-
 class PeriodLength(Enum):
-    first_period = 1
-    last_period = 26
+    first_period = FIRST_PAY_PERIOD
+    last_period = LAST_PAY_PERIOD
 
 class Tables(Enum):
     pay_table = pt.PayTable()

@@ -1,7 +1,9 @@
 from ..constants import filenames
+from ..constants.payroll import DEFAULT_BUDGET, FIRST_PAY_PERIOD, LAST_PAY_PERIOD
 from contextlib import contextmanager
 from dataclasses import dataclass
 import datetime as d
+from pathlib import Path
 import re
 import sqlite3
 
@@ -40,11 +42,12 @@ class PayPeriod:
 class Employee:
     name: str
     emplid: str | None
+    budget: int
     schedule: tuple[tuple[tuple[str, str], ...], ...]
 
 
 def default_database_path() -> str:
-    return f"{filenames.asset_folder}/{filenames.database_folder}/{filenames.database_name}"
+    return str(Path(filenames.asset_folder) / filenames.database_folder / filenames.database_name)
 
 
 def parse_date(value: str) -> str:
@@ -88,6 +91,13 @@ def parse_emplid(value: str) -> str:
     if not value or not (value.isascii() and value.isdigit()):
         raise ValidationError("EMPLID is required and must contain digits only.")
     return value
+
+
+def parse_budget(value: str | int) -> int:
+    raw = str(value).strip()
+    if not raw or not raw.isascii() or not raw.isdigit():
+        raise ValidationError("Budget must contain digits only.")
+    return int(raw)
 
 
 def parse_time(value: str) -> str:
@@ -140,7 +150,11 @@ def normalize_shift_segments(segments) -> tuple[tuple[str, str], ...]:
     return tuple(normalized)
 
 
-def parse_pay_period(value: str, first: int = 1, last: int = 26) -> str:
+def parse_pay_period(
+    value: str,
+    first: int = FIRST_PAY_PERIOD,
+    last: int = LAST_PAY_PERIOD,
+) -> str:
     value = value.strip()
 
     if not value.isnumeric() or not first <= int(value) <= last:
@@ -190,14 +204,23 @@ class SocksDatabase:
             )
             cur.execute("CREATE TABLE IF NOT EXISTS days_off(invalid_dates TEXT)")
             cur.execute(
-                """
+                f"""
                 CREATE TABLE IF NOT EXISTS employees(
                     employee_id INTEGER PRIMARY KEY,
                     name TEXT NOT NULL COLLATE NOCASE UNIQUE,
-                    emplid TEXT UNIQUE
+                    emplid TEXT UNIQUE,
+                    budget INTEGER NOT NULL DEFAULT {DEFAULT_BUDGET}
                 )
                 """
             )
+            employee_columns = {
+                row[1] for row in cur.execute("PRAGMA table_info(employees)").fetchall()
+            }
+            if "budget" not in employee_columns:
+                cur.execute(
+                    "ALTER TABLE employees "
+                    f"ADD COLUMN budget INTEGER NOT NULL DEFAULT {DEFAULT_BUDGET}"
+                )
             legacy_schedule_exists = cur.execute(
                 "SELECT 1 FROM sqlite_master WHERE type='table' AND name='employee_schedule'"
             ).fetchone()
@@ -323,7 +346,8 @@ class SocksDatabase:
     def list_employees(self) -> list[Employee]:
         with self.connection() as con:
             employees = con.execute(
-                "SELECT employee_id, name, emplid FROM employees ORDER BY employee_id"
+                "SELECT employee_id, name, emplid, budget "
+                "FROM employees ORDER BY employee_id"
             ).fetchall()
             shifts = con.execute(
                 "SELECT employee_id, weekday, start_time, end_time "
@@ -339,13 +363,18 @@ class SocksDatabase:
             Employee(
                 name,
                 emplid,
+                int(budget),
                 tuple(tuple(day) for day in schedules[employee_id]),
             )
-            for employee_id, name, emplid in employees
+            for employee_id, name, emplid, budget in employees
         ]
 
     def create_employee(
-        self, name: str, schedule, emplid: str | None = None
+        self,
+        name: str,
+        schedule,
+        emplid: str | None = None,
+        budget: str | int = DEFAULT_BUDGET,
     ) -> Employee:
         name = name.strip()
         if not name:
@@ -356,10 +385,14 @@ class SocksDatabase:
         normalized_schedule = tuple(normalize_shift_segments(day) for day in schedule)
 
         normalized_emplid = parse_emplid(emplid) if emplid is not None else None
+        normalized_budget = parse_budget(budget)
         with self.connection() as con:
             cur = con.cursor()
             try:
-                cur.execute("INSERT INTO employees(name, emplid) VALUES(?,?)", (name, normalized_emplid))
+                cur.execute(
+                    "INSERT INTO employees(name, emplid, budget) VALUES(?,?,?)",
+                    (name, normalized_emplid, normalized_budget),
+                )
             except sqlite3.IntegrityError as exc:
                 raise DuplicateError("Employee name or EMPLID already exists.") from exc
             employee_id = cur.lastrowid
@@ -376,7 +409,7 @@ class SocksDatabase:
                 ],
             )
 
-        return Employee(name, normalized_emplid, normalized_schedule)
+        return Employee(name, normalized_emplid, normalized_budget, normalized_schedule)
 
     def set_employee_schedule(self, name: str, weekday: int, segments) -> None:
         """Replace one Sunday-first weekday schedule with up to two intervals."""
@@ -420,6 +453,17 @@ class SocksDatabase:
                 raise DuplicateError(f"EMPLID {emplid} is already assigned to another employee.") from exc
 
         return emplid
+
+    def set_employee_budget(self, name: str, budget: str | int) -> int:
+        normalized_budget = parse_budget(budget)
+        with self.connection() as con:
+            result = con.execute(
+                "UPDATE employees SET budget=? WHERE name=? COLLATE NOCASE",
+                (normalized_budget, name.strip()),
+            )
+            if result.rowcount == 0:
+                raise NotFoundError(f"Employee {name!r} does not exist.")
+        return normalized_budget
 
     def delete_employee(self, name: str) -> None:
         name = name.strip()

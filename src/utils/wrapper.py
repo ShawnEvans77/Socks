@@ -1,42 +1,20 @@
 from ..constants import guide
+from ..constants import schedule as schedule_rules
+from .terminal import Color, color as c, pad
 from .database import (
     DatabaseError,
     SocksDatabase,
     ValidationError,
     parse_date,
+    parse_budget,
     parse_emplid,
     parse_pay_period,
     parse_time,
     parse_year,
     normalize_shift_segments,
 )
-import re
 
-WEEKDAYS = ("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
-
-# ─── ANSI Colors ──────────────────────────────────────────────────────────────
-
-class Color:
-    RESET   = "\033[0m"
-    BOLD    = "\033[1m"
-    DIM     = "\033[2m"
-    RED     = "\033[91m"
-    GREEN   = "\033[92m"
-    YELLOW  = "\033[93m"
-    BLUE    = "\033[94m"
-    CYAN    = "\033[96m"
-
-def c(text: str, *codes: str) -> str:
-    """Wrap text in one or more ANSI color codes."""
-    return "".join(codes) + text + Color.RESET
-
-def _visible_len(s: str) -> int:
-    """Return the printable length of a string, ignoring ANSI escape codes."""
-    return len(re.sub(r"\033\[[0-9;]*m", "", s))
-
-def _pad(s: str, width: int) -> str:
-    """Pad a (possibly ANSI-colored) string to a visible width."""
-    return s + " " * max(0, width - _visible_len(s))
+WEEKDAYS = schedule_rules.WEEKDAYS
 
 
 # ─── Control-Flow Exceptions ──────────────────────────────────────────────────
@@ -56,6 +34,19 @@ class Wrapper:
     def __init__(self):
         self.db = SocksDatabase()
         self.db.ensure_schema()
+
+    @staticmethod
+    def _normalized_name(name: str) -> str:
+        return " ".join(name.split()).casefold()
+
+    @classmethod
+    def _find_employee(cls, employees, name: str):
+        normalized_name = cls._normalized_name(name)
+        return next(
+            (employee for employee in employees
+             if cls._normalized_name(employee.name) == normalized_name),
+            None,
+        )
 
     # ── CREATE ────────────────────────────────────────────────────────────────
 
@@ -106,9 +97,7 @@ class Wrapper:
                     continue
 
                 name = " ".join(f"{first.strip()} {last.strip()}".split())
-                normalized_name = name.casefold()
-                if any(" ".join(employee.name.split()).casefold() == normalized_name
-                       for employee in employees):
+                if self._find_employee(employees, name):
                     self._warn(f"An employee named {name} already exists.")
                     continue
                 break
@@ -126,6 +115,8 @@ class Wrapper:
                     self._warn(f"EMPLID {emplid} is already assigned to another employee.")
                     continue
                 break
+
+            budget = Wrapper.fetch_budget("Department budget")
 
             print("\n    Build the weekly schedule, Sunday through Saturday.")
             schedule = []
@@ -145,11 +136,7 @@ class Wrapper:
                 if normalized_choice == "save":
                     break
 
-                weekdays = {
-                    alias: index
-                    for index, day in enumerate(WEEKDAYS)
-                    for alias in (day.casefold(), day[:3].casefold())
-                }
+                weekdays = schedule_rules.weekday_aliases()
                 weekday_index = weekdays.get(normalized_choice)
                 if weekday_index is None:
                     self._warn("Enter Save or a weekday name/abbreviation shown above.")
@@ -159,16 +146,13 @@ class Wrapper:
                 print(f"\n    Revising {weekday}.")
                 schedule[weekday_index] = Wrapper._prompt_day_schedule(weekday)
 
-            employee = self.db.create_employee(name, schedule, emplid)
+            employee = self.db.create_employee(name, schedule, emplid, budget)
             cache = guide.Tables.schedule_table.value
-            cache_key = employee.name.lower()
-            cache.schedule_dict[cache_key] = [
-                [list(segment) for segment in day] for day in employee.schedule
-            ]
-            cache.emplid_dict[cache_key] = employee.emplid
-            cache.missed_days_dict[cache_key] = set()
-            cache.extra_days_dict[cache_key] = {}
-            self._success(f"Employee {employee.name} added with EMPLID {employee.emplid}.")
+            cache.add_employee(employee)
+            self._success(
+                f"Employee {employee.name} added with EMPLID {employee.emplid} "
+                f"and budget {employee.budget}."
+            )
 
         except GoBack:
             self._cancelled()
@@ -202,7 +186,7 @@ class Wrapper:
         print(f"\n  Weekly schedule for {name}")
         for weekday, segments in zip(WEEKDAYS, schedule):
             shift = ", then ".join(f"{start} - {end}" for start, end in segments) or "Off"
-            print(f"    {_pad(weekday, 10)} {shift}")
+            print(f"    {pad(weekday, 10)} {shift}")
 
     # ── READ ──────────────────────────────────────────────────────────────────
 
@@ -224,8 +208,8 @@ class Wrapper:
         print(c("  Pay Period Schedule", Color.BOLD + Color.CYAN))
         print(border)
         print(
-            f"  {sep}{_pad(h_period,10)}{sep}{_pad(h_start,13)}{sep}"
-            f"{_pad(h_end,13)}{sep}{_pad(h_due,13)}{sep}{_pad(h_pay,13)}{sep}"
+            f"  {sep}{pad(h_period,10)}{sep}{pad(h_start,13)}{sep}"
+            f"{pad(h_end,13)}{sep}{pad(h_due,13)}{sep}{pad(h_pay,13)}{sep}"
         )
         print(mid)
 
@@ -251,7 +235,7 @@ class Wrapper:
         print()
         print(c("  Invalid Dates", Color.BOLD + Color.CYAN))
         print(border)
-        print(f"  {sep}{_pad(c(' Date', Color.BOLD), 13)}{sep}")
+        print(f"  {sep}{pad(c(' Date', Color.BOLD), 13)}{sep}")
         print(mid)
 
         for row in rows:
@@ -267,22 +251,38 @@ class Wrapper:
             return
 
         name_width = max(len("Employee"), *(len(employee.name) for employee in employees))
-        id_width = max(len("EMPLID"), *(len(employee.emplid or "NOT SET") for employee in employees))
-        border = f"  ┌{'─' * (name_width + 2)}┬{'─' * (id_width + 2)}┐"
-        middle = f"  ├{'─' * (name_width + 2)}┼{'─' * (id_width + 2)}┤"
-        footer = f"  └{'─' * (name_width + 2)}┴{'─' * (id_width + 2)}┘"
+        id_width = max(
+            len("EMPLID"), *(len(employee.emplid or "NOT SET") for employee in employees)
+        )
+        budget_width = max(len("Budget"), *(len(str(employee.budget)) for employee in employees))
+        border = (
+            f"  ┌{'─' * (name_width + 2)}┬{'─' * (id_width + 2)}"
+            f"┬{'─' * (budget_width + 2)}┐"
+        )
+        middle = (
+            f"  ├{'─' * (name_width + 2)}┼{'─' * (id_width + 2)}"
+            f"┼{'─' * (budget_width + 2)}┤"
+        )
+        footer = (
+            f"  └{'─' * (name_width + 2)}┴{'─' * (id_width + 2)}"
+            f"┴{'─' * (budget_width + 2)}┘"
+        )
 
         print()
         print(c("  Employees", Color.BOLD + Color.CYAN))
         print(c(border, Color.DIM))
         print(
-            f"  │ {_pad(c('Employee', Color.BOLD), name_width)} │ "
-            f"{_pad(c('EMPLID', Color.BOLD), id_width)} │"
+            f"  │ {pad(c('Employee', Color.BOLD), name_width)} │ "
+            f"{pad(c('EMPLID', Color.BOLD), id_width)} │ "
+            f"{pad(c('Budget', Color.BOLD), budget_width)} │"
         )
         print(c(middle, Color.DIM))
         for employee in employees:
             emplid = employee.emplid or "NOT SET"
-            print(f"  │ {_pad(employee.name, name_width)} │ {_pad(emplid, id_width)} │")
+            print(
+                f"  │ {pad(employee.name, name_width)} │ {pad(emplid, id_width)} │ "
+                f"{pad(str(employee.budget), budget_width)} │"
+            )
         print(c(footer, Color.DIM))
         print()
 
@@ -292,17 +292,19 @@ class Wrapper:
             print(c("\n  No employee schedules.\n", Color.DIM))
             return
 
-        weekdays = ("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
         print()
         print(c("  Employee Schedules", Color.BOLD + Color.CYAN))
         for employee in employees:
             emplid = employee.emplid or "NOT SET"
-            print(f"\n  {c(employee.name, Color.BOLD)}  {c(f'EMPLID: {emplid}', Color.DIM)}")
-            for weekday, segments in zip(weekdays, employee.schedule):
+            print(
+                f"\n  {c(employee.name, Color.BOLD)}  "
+                f"{c(f'EMPLID: {emplid} | Budget: {employee.budget}', Color.DIM)}"
+            )
+            for weekday, segments in zip(WEEKDAYS, employee.schedule):
                 shift = ", then ".join(
                     f"{start} - {end}" for start, end in segments
                 ) or "Off"
-                print(f"    {_pad(weekday, 10)} {shift}")
+                print(f"    {pad(weekday, 10)} {shift}")
         print()
 
     # ── UPDATE ────────────────────────────────────────────────────────────────
@@ -347,27 +349,11 @@ class Wrapper:
                 self._error("No employee records are available.")
                 return
 
-            self.read_employee_names_and_emplids()
-            while True:
-                raw = Wrapper._prompt(
-                    "Employee name", hint="First and last name; capitalization does not matter"
-                )
-                if raw.lower() == "b":
-                    raise GoBack
-                entered_name = " ".join(raw.split()).casefold()
-                employee = next(
-                    (
-                        row for row in employees
-                        if " ".join(row.name.split()).casefold() == entered_name
-                    ),
-                    None,
-                )
-                if employee is not None:
-                    break
-                self._warn("Enter an employee's first and last name as shown in the table.")
+            employee = self._select_employee(employees)
 
-            print("\n    Valid weekdays: Sunday (Sun), Monday (Mon), Tuesday (Tue), Wednesday (Wed).")
-            print("                    Thursday (Thu), Friday (Fri), Saturday (Sat).")
+            print("\n    Valid weekdays: " + ", ".join(
+                f"{day} ({day[:3]})" for day in WEEKDAYS
+            ) + ".")
             weekday = Wrapper.fetch_weekday("Weekday to update")
             weekday_name = WEEKDAYS[weekday]
             current = employee.schedule[weekday]
@@ -417,6 +403,45 @@ class Wrapper:
             self._error(str(exc))
         finally:
             self._footer()
+
+    def update_employee_budget(self):
+        self._header("Employee Budget Update", "UPDATE")
+        try:
+            employees = self.db.list_employees()
+            if not employees:
+                self._error("No employee records are available.")
+                return
+
+            employee = self._select_employee(employees)
+            budget = Wrapper.fetch_budget("New department budget")
+            cache = guide.Tables.schedule_table.value
+            if cache.has_name(employee.name):
+                budget = cache.set_budget(employee.name, budget)
+            else:
+                budget = self.db.set_employee_budget(employee.name, budget)
+            self._success(
+                f"{employee.name}'s department number is now "
+                f"{guide.LearningCenter.lc_dept_prefix.value}-{budget}."
+            )
+        except GoBack:
+            self._cancelled()
+        except DatabaseError as exc:
+            self._error(str(exc))
+        finally:
+            self._footer()
+
+    def _select_employee(self, employees):
+        self.read_employee_names_and_emplids()
+        while True:
+            raw = Wrapper._prompt(
+                "Employee name", hint="First and last name; capitalization does not matter"
+            )
+            if raw.lower() == "b":
+                raise GoBack
+            employee = self._find_employee(employees, raw)
+            if employee is not None:
+                return employee
+            self._warn("Enter an employee's first and last name as shown in the table.")
 
     # ── DELETE ────────────────────────────────────────────────────────────────
 
@@ -494,7 +519,7 @@ class Wrapper:
 
     @staticmethod
     def fetch_period(prompt: str) -> str:
-        """Prompt for a pay period (1–26). Raises GoBack or QuitApp on escape."""
+        """Prompt for a configured pay period. Raises GoBack or QuitApp on escape."""
         first = guide.PeriodLength.first_period.value
         last  = guide.PeriodLength.last_period.value
 
@@ -527,11 +552,7 @@ class Wrapper:
     @staticmethod
     def fetch_weekday(prompt: str) -> int:
         """Prompt for a weekday, accepting full names or 3-letter forms."""
-        aliases = {
-            alias: index
-            for index, day in enumerate(WEEKDAYS)
-            for alias in (day.casefold(), day[:3].casefold())
-        }
+        aliases = schedule_rules.weekday_aliases()
         while True:
             raw = Wrapper._prompt(prompt, hint="Full weekday name or 3-letter abbreviation")
             if raw.lower() == "b":
@@ -555,6 +576,22 @@ class Wrapper:
                 return None
             try:
                 return parse_time(raw)
+            except ValidationError as exc:
+                Wrapper._warn(str(exc))
+
+    @staticmethod
+    def fetch_budget(prompt: str) -> int:
+        """Prompt for a numeric department budget."""
+        while True:
+            raw = Wrapper._prompt(
+                prompt,
+                hint=f"Digits only; final department number is "
+                f"{guide.LearningCenter.lc_dept_prefix.value}-<budget>",
+            )
+            if raw.lower() == "b":
+                raise GoBack
+            try:
+                return parse_budget(raw)
             except ValidationError as exc:
                 Wrapper._warn(str(exc))
 
@@ -583,14 +620,6 @@ class Wrapper:
             except ValidationError as exc:
                 Wrapper._warn(str(exc))
                 continue
-
-    @staticmethod
-    def insertable_period(pay_period: str) -> bool:
-        try:
-            parse_pay_period(pay_period)
-        except ValidationError:
-            return False
-        return True
 
     @staticmethod
     def _confirm(message: str) -> bool:

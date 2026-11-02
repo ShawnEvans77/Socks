@@ -1,11 +1,12 @@
 from ..constants import guide, filenames
+from ..constants.schedule import DAYS_PER_WEEK, weekday_index
 from ..objects import clock
+from ..utils.database import normalize_shift_segments
 from io import BytesIO
 from pypdf import PdfReader, PdfWriter
 
 class SheetWriter:
-    """The SheetWriter class is the main way Socks creates your timesheet. It has various static constants
-    that represent indices in the PDF. It uses methods like write_last_name() to write and create your sheet."""
+    """Populate and flatten the employee timesheet PDF."""
 
     def __init__(
         self, input_file_name: str, last_name: str, first_name: str,
@@ -115,7 +116,7 @@ class SheetWriter:
         self.writer.root_object.pop(NameObject("/AcroForm"), None)
 
     def write_emplid(self):
-        """Draw the optional EMPLID over its printed line on the form."""
+        """Draw the required EMPLID over its printed line on the form."""
 
         from reportlab.pdfbase.pdfmetrics import stringWidth
         from reportlab.pdfgen import canvas
@@ -163,16 +164,13 @@ class SheetWriter:
 
     @staticmethod
     def txt_field(index: int) -> str:
-        """A getter method to allow us to access a text field based on index. This function call
-        will make your life easier, you don't need to write {topmost...} all the time."""
-
+        """Build the PDF form field path for a text field index."""
         return f"topmostSubform[0].Page1[0].TextField1[{index}]"
-    
-    def update_field(self, field: str, text: str):
-        """Writes the given text data into the given field. Method exists to make updating much easier,
-        rather than the excessively long {update_page...} function."""
 
-        self.writer.update_page_form_field_values(self.page,{field: text})
+    def update_field(self, field: str, text: str):
+        """Write text into a named PDF form field."""
+
+        self.writer.update_page_form_field_values(self.page, {field: text})
 
     def write_last_name(self):
         '''Writes the person's last name to time the time sheet.'''
@@ -187,31 +185,45 @@ class SheetWriter:
         self.update_field(first_name_field, self.first_name.capitalize())
 
     def write_pay_period(self):
-        '''Writes the pay period to itme the time sheet.'''
-        
-        pay_period_field = SheetWriter.txt_field(guide.Indices.pay_period_index.value)
-        pay_period_string = f"{self.pay_period}: {guide.Tables.pay_table.value.start_date_string(self.pay_period)} - {guide.Tables.pay_table.value.end_date_string(self.pay_period)}"
+        """Write the pay period and its date range."""
+        pay_table = guide.Tables.pay_table.value
+        pay_period_field = SheetWriter.txt_field(
+            guide.Indices.pay_period_index.value
+        )
+        pay_period_string = (
+            f"{self.pay_period}: {pay_table.start_date_string(self.pay_period)} - "
+            f"{pay_table.end_date_string(self.pay_period)}"
+        )
         self.update_field(pay_period_field, pay_period_string)
 
     def write_department(self):
-        '''Writes the person's department to the time sheet.'''
-
-        self.update_field(SheetWriter.txt_field(guide.Indices.dept_index.value), guide.LearningCenter.lc_dept_name.value)
+        """Write the employee's department."""
+        self._write_guide_field(
+            guide.Indices.dept_index.value, guide.LearningCenter.lc_dept_name.value
+        )
 
     def write_pay(self):
-        '''Writes the pay rate to the timesheet.'''
-
-        self.update_field(SheetWriter.txt_field(guide.Indices.rate_index.value), guide.LearningCenter.lc_ca_rate.value)
+        """Write the employee's pay rate."""
+        self._write_guide_field(
+            guide.Indices.rate_index.value, guide.LearningCenter.lc_ca_rate.value
+        )
 
     def write_department_number(self):
-        '''Writes the Department Number to the timesheet.'''
-
-        self.update_field(SheetWriter.txt_field(guide.Indices.dept_num_index.value), guide.LearningCenter.lc_dept_num.value)
+        """Write the department number."""
+        budget = guide.Tables.schedule_table.value.get_budget(self.name)
+        department_number = f"{guide.LearningCenter.lc_dept_prefix.value}-{budget}"
+        self._write_guide_field(
+            guide.Indices.dept_num_index.value, department_number
+        )
 
     def write_department_extension(self):
-        '''Writes the Department Extension to the timesheet.'''
+        """Write the department extension."""
+        self._write_guide_field(
+            guide.Indices.dept_ext_index.value, guide.LearningCenter.lc_dept_ext.value
+        )
 
-        self.update_field(SheetWriter.txt_field(guide.Indices.dept_ext_index.value), guide.LearningCenter.lc_dept_ext.value)
+    def _write_guide_field(self, index: int, value: str) -> None:
+        self.update_field(SheetWriter.txt_field(index), value)
 
     def write_dates(self):
         '''Writes all fourteen days of the current pay period to the timesheet.'''
@@ -222,96 +234,91 @@ class SheetWriter:
             self.update_field(date_field, date_string)
 
     def write_hours(self):
-        '''Writes all hours the person worked for both weeks in the timesheet.'''
+        schedule_table = guide.Tables.schedule_table.value
+        schedule = schedule_table.get(self.name)
+        invalid_dates = set(guide.Tables.pay_table.value.get_invalid_dates())
+        missed_days = schedule_table.get_missed_days(self.name)
+        missed_split_shifts = schedule_table.get_missed_split_shifts(self.name)
+        extra_days = schedule_table.get_extra_days(self.name)
+        week_totals = [0.0] * len(guide.Indices.sub_totals_indices.value)
 
-        j = 0 
-        k = 0 
-        week_total = 0.0
-        total_hours = 0.0
-        invalid_dates = guide.Tables.pay_table.value.get_invalid_dates()
-        missed_days = guide.Tables.schedule_table.value.get_missed_days(self.name)
-        extra_days = guide.Tables.schedule_table.value.get_extra_days(self.name)
-
-        for i in range(len(guide.Indices.time_in_out_indices.value)):
-
-            date = self.dates[i]
-
-            time_in_index = guide.Indices.time_in_out_indices.value[i][0]
-            time_out_index = guide.Indices.time_in_out_indices.value[i][1]
-
-            time_in_field = SheetWriter.txt_field(time_in_index)
-            time_out_field = SheetWriter.txt_field(time_out_index)
-
-            schedule = guide.Tables.schedule_table.value.get(self.name)
-
-            extra_shift = extra_days.get(date)
-            if extra_shift:
-                segments = [extra_shift]
-            else:
-                segments = schedule[j]
-
-            worked = bool(extra_shift) or (
-                bool(segments) and date not in invalid_dates and date not in missed_days
+        for index, date in enumerate(self.dates):
+            segments, worked = self._segments_for_date(
+                date,
+                schedule[weekday_index(date)],
+                invalid_dates,
+                missed_days,
+                missed_split_shifts,
+                extra_days,
             )
-            if worked:
-                day_hours = round(
-                    sum(clock.Clock(start) - clock.Clock(end) for start, end in segments),
-                    2,
+            if not worked:
+                continue
+
+            hours = round(
+                sum(clock.Clock(start) - clock.Clock(end) for start, end in segments),
+                2,
+            )
+            week_totals[index // DAYS_PER_WEEK] += hours
+            self._write_worked_day(index, segments, hours)
+
+        self._write_totals(week_totals)
+
+    @staticmethod
+    def _segments_for_date(
+        date, scheduled_segments, invalid_dates, missed_days,
+        missed_split_shifts, extra_days,
+    ):
+        extra_shift = extra_days.get(date)
+        if extra_shift:
+            return list(normalize_shift_segments(extra_shift)), True
+
+        missed_segments = missed_split_shifts.get(date, set())
+        segments = [
+            tuple(segment) for segment in scheduled_segments
+            if tuple(segment) not in missed_segments
+        ]
+        worked = bool(segments) and date not in invalid_dates and date not in missed_days
+        return segments, worked
+
+    def _write_worked_day(self, index: int, segments, hours: float) -> None:
+        time_in_index, time_out_index = guide.Indices.time_in_out_indices.value[index]
+        time_in_field = SheetWriter.txt_field(time_in_index)
+        time_out_field = SheetWriter.txt_field(time_out_index)
+
+        if len(segments) == 1:
+            self.update_field(time_in_field, segments[0][0])
+            self.update_field(time_out_field, segments[0][1])
+        else:
+            self.update_field(time_in_field, "")
+            self.update_field(time_out_field, "")
+            meal_index = guide.Indices.meal_period_indices.value[index]
+            self.update_field(SheetWriter.txt_field(meal_index), "")
+            self.split_shift_cells.append(
+                (
+                    self._field_rect(time_in_index),
+                    self._field_rect(time_out_index),
+                    tuple(segments),
                 )
-                hours_worked_str = f"{day_hours:g}"
-                week_total = round(week_total + day_hours, 2)
+            )
 
-                if len(segments) == 1:
-                    self.update_field(time_in_field, segments[0][0])
-                    self.update_field(time_out_field, segments[0][1])
-                else:
-                    self.update_field(time_in_field, "")
-                    self.update_field(time_out_field, "")
-                    self.update_field(
-                        SheetWriter.txt_field(guide.Indices.meal_period_indices.value[i]), ""
-                    )
-                    self.split_shift_cells.append(
-                        (
-                            self._field_rect(time_in_index),
-                            self._field_rect(time_out_index),
-                            tuple(segments),
-                        )
-                    )
+        hours_text = f"{hours:g}"
+        self.update_field(
+            SheetWriter.txt_field(guide.Indices.hours_worked_indices.value[index]),
+            hours_text,
+        )
+        self.update_field(
+            SheetWriter.txt_field(guide.Indices.total_indices.value[index]),
+            hours_text,
+        )
 
-                hours_worked_index = guide.Indices.hours_worked_indices.value[i]
-                total_index = guide.Indices.total_indices.value[i]
+    def _write_totals(self, week_totals: list[float]) -> None:
+        for total, indices in zip(week_totals, guide.Indices.sub_totals_indices.value):
+            for index in indices:
+                self.update_field(SheetWriter.txt_field(index), f"{total:g}")
 
-                hours_worked_field = SheetWriter.txt_field(hours_worked_index)
-                self.update_field(hours_worked_field, hours_worked_str)
-
-                total_field = SheetWriter.txt_field(total_index)
-                self.update_field(total_field, hours_worked_str)
-                
-            if j == 6:
-                sub_total_index = guide.Indices.sub_totals_indices.value[k][0]
-                sub_total_field = SheetWriter.txt_field(sub_total_index)
-
-                self.update_field(sub_total_field, f"{week_total:g}")
-
-                sub_total_index = guide.Indices.sub_totals_indices.value[k][1]
-                sub_total_field = SheetWriter.txt_field(sub_total_index)
-
-                self.update_field(sub_total_field, f"{week_total:g}")
-
-                total_hours += week_total
-
-                week_total = 0
-
-                j = 0
-                k = k + 1
-            else:
-                j = j + 1
-
-        total_hours_field = SheetWriter.txt_field(guide.Indices.total_hours_index.value[0])
-        self.update_field(total_hours_field, f"{total_hours:g}")
-
-        total_hours_field = SheetWriter.txt_field(guide.Indices.total_hours_index.value[1])
-        self.update_field(total_hours_field, f"{total_hours:g}")
+        total_hours = sum(week_totals)
+        for index in guide.Indices.total_hours_index.value:
+            self.update_field(SheetWriter.txt_field(index), f"{total_hours:g}")
 
     def write_split_shift_overlays(self):
         """Draw paired times diagonally in the Time In and Time Out cells."""
