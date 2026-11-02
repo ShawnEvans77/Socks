@@ -1,4 +1,5 @@
 from src.objects import sheet_writer
+from src.objects.clock import Clock
 from src.constants import guide, filenames
 import datetime, re
 
@@ -143,41 +144,108 @@ def _step_pay_period() -> int:
         return pp
 
 
-# ─── Step 3: Missed Days ──────────────────────────────────────────────────────
+# ─── Step 3: Work Days ────────────────────────────────────────────────────────
 
-def _step_missed_days(first: str, last: str, pay_period: int) -> None:
-    _section(3, 3, "Missed Days")
+def _step_work_days(first: str, last: str, pay_period: int) -> None:
+    _section(3, 3, "Work Days")
+    employee = f"{first} {last}"
+    schedule_table = guide.Tables.schedule_table.value
+    schedule_table.add_missed_days(employee, set())
+    schedule_table.add_extra_days(employee, {})
 
-    if not _yn("Did you miss any days this pay period?"):
+    if _yn("Did you miss any days this pay period?"):
+        _blank()
+
+        days    = guide.Tables.pay_table.value.get_period_dates(pay_period)
+        day_map = {guide.Tables.pay_table.value.date_str(day): day for day in days}
+        keys    = list(day_map)
+
+        print(c("  Available days:", Color.DIM))
+        print("  " + c(" | ", Color.DIM).join(c(k, Color.YELLOW + Color.BOLD) for k in keys))
+        _blank()
+
+        while True:
+            raw    = _prompt("Missed days (space-separated)").lower()
+            missed = raw.split()
+
+            if not missed:
+                _warn("Enter at least one day, or answer n above to skip.")
+                continue
+
+            invalid = set(missed) - set(keys)
+            if invalid:
+                _warn(f"Unrecognized: {c(', '.join(sorted(invalid)), Color.YELLOW)}. Use only the dates listed above.")
+                continue
+
+            schedule_table.add_missed_days(employee, {day_map[s] for s in missed})
+            _success(f"{len(missed)} missed day(s) recorded: {', '.join(c(d, Color.YELLOW) for d in sorted(missed))}")
+            break
+    else:
         _info("No missed days — all slots will be filled.")
+
+    _step_extra_days(first, last, pay_period)
+
+
+def _step_extra_days(first: str, last: str, pay_period: int) -> None:
+    employee = f"{first} {last}"
+    schedule_table = guide.Tables.schedule_table.value
+
+    if not _yn("Did you work an extra day or days this pay period?"):
+        schedule_table.add_extra_days(employee, {})
+        _info("No extra days recorded.")
         return
 
-    _blank()
-
-    days    = guide.Tables.pay_table.value.get_period_dates(pay_period)
+    days = guide.Tables.pay_table.value.get_period_dates(pay_period)
     day_map = {guide.Tables.pay_table.value.date_str(day): day for day in days}
-    keys    = list(day_map)
+    keys = list(day_map)
+    missed_days = schedule_table.get_missed_days(employee)
 
-    print(c("  Available days:", Color.DIM))
-    print("  " + c(" | ", Color.DIM).join(c(k, Color.YELLOW + Color.BOLD) for k in keys))
+    print(c("  Dates in this pay period:", Color.DIM))
+    print("  " + c(" | ", Color.DIM).join(c(key, Color.YELLOW + Color.BOLD) for key in keys))
     _blank()
 
     while True:
-        raw    = _prompt("Missed days (space-separated)").lower()
-        missed = raw.split()
-
-        if not missed:
-            _warn("Enter at least one day, or answer n above to skip.")
+        dates = _prompt("Extra work dates (space-separated)").split()
+        if not dates:
+            _warn("Enter at least one date, or answer n above to skip.")
             continue
 
-        invalid = set(missed) - set(keys)
+        invalid = set(dates) - set(keys)
         if invalid:
-            _warn(f"Unrecognized: {c(', '.join(sorted(invalid)), Color.YELLOW)}. Use only the dates listed above.")
+            _warn(f"Unrecognized: {', '.join(sorted(invalid))}. Enter dates shown for this pay period.")
             continue
 
-        guide.Tables.schedule_table.value.add_missed_days(f"{first} {last}", {day_map[s] for s in missed})
-        _success(f"{len(missed)} missed day(s) recorded: {', '.join(c(d, Color.YELLOW) for d in sorted(missed))}")
-        return
+        conflicts = [date for date in dates if day_map[date] in missed_days]
+        if conflicts:
+            _warn(f"These dates are also marked missed: {', '.join(conflicts)}. Remove them or update missed days.")
+            continue
+
+        if len(set(dates)) != len(dates):
+            _warn("Enter each extra work date only once.")
+            continue
+
+        break
+
+    extra_days = {}
+    for date in dates:
+        while True:
+            start = _fetch_work_time(f"Start time for {date}")
+            end = _fetch_work_time(f"End time for {date}")
+            if Clock(start) - Clock(end) > 0:
+                extra_days[day_map[date]] = (start, end)
+                break
+            _warn("End time must be later than start time. Enter both times again.")
+
+    schedule_table.add_extra_days(employee, extra_days)
+    _success(f"Recorded extra work for {len(extra_days)} date(s).")
+
+
+def _fetch_work_time(label: str) -> str:
+    while True:
+        raw = _prompt(label, hint="12-hour time, such as 9AM or 1PM").upper()
+        if re.fullmatch(r"(?:1[0-2]|[1-9])(?:AM|PM)", raw):
+            return raw
+        _warn("Enter a valid time such as 9AM or 1PM.")
 
 
 # ─── Generate ─────────────────────────────────────────────────────────────────
@@ -230,7 +298,7 @@ def main():
                     pay_period = _step_pay_period()
                     step = 3
                 elif step == 3:
-                    _step_missed_days(first, last, pay_period)
+                    _step_work_days(first, last, pay_period)
                     file_name = _generate(first, last, pay_period)
 
                     _success(f"Saved  →  {c(file_name, Color.BOLD + Color.WHITE)}")
