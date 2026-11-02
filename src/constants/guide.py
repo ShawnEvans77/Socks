@@ -9,6 +9,7 @@ class Indices(Enum):
     dept_index = 9
     rate_index = 2
     dept_ext_index = 151
+    ca_checkbox_name = "topmostSubform[0].Page1[0].CheckBox1[0]"
 
     sub_totals_indices = ((74, 73), (132,137))
     total_hours_index = (138, 141)
@@ -20,6 +21,7 @@ class Indices(Enum):
     week_one_time_in_out_indices = ((11, 13), (15,  17), (19,21),   (23, 25),  (27, 29),  (31, 33), (35, 37))
     week_two_time_in_out_indices = ((76, 78), (90, 102), (91, 103), (92, 104), (93, 105), (94, 106),  (95, 107))
     time_in_out_indices = week_one_time_in_out_indices + week_two_time_in_out_indices
+    meal_period_indices = (12, 16, 20, 24, 28, 32, 36, 77, 96, 97, 98, 99, 100, 101)
 
     week_one_total_indices = (59, 60, 61, 62, 63, 64, 65)
     week_two_total_indices = (82, 126, 127, 128, 129, 130, 131)
@@ -31,7 +33,7 @@ class Indices(Enum):
 
 class LearningCenter(Enum):
     lc_dept_name = 'Learning Center'
-    lc_dept_num = '885-01'
+    lc_dept_num = '885-54'
     lc_ca_rate = '$19.12'
     lc_dept_ext = '5821'
 

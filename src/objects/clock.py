@@ -1,24 +1,18 @@
+from ..utils.database import parse_time, time_minutes
+
+
 class Clock:
-    """A simple class that recieves Strings in the form "12PM", "3AM", etc, then turns them into objects.
-    We use this class for easily determining the amount of hours passed between two given times.
-    
-    Attributes
-        hour - The hour this clock object represents, stored in 24 hour format.     
-    """
+    """Parse 12-hour times and calculate durations with minute precision."""
 
     def __init__(self, time_str: str):
-        hour_int = int(time_str[:-2])
-        
-        match time_str[-2:]:
-            case "PM": self.hour = hour_int if hour_int == 12 else hour_int + 12
-            case "AM": self.hour = 0 if hour_int == 12 else hour_int
+        self.time_str = parse_time(time_str)
+        self.minutes = time_minutes(self.time_str)
 
-    def __sub__(self, other) -> int:
-        '''Magic Method for finding difference between two times.'''
-
-        return other.hour - self.hour
+    def __sub__(self, other) -> int | float:
+        """Return elapsed hours from this clock time to the other."""
+        duration = other.minutes - self.minutes
+        hours = round(duration / 60, 2)
+        return int(hours) if hours.is_integer() else hours
     
     def __str__(self) -> str:
-        '''Magic Method for printing a time.'''
-        
-        return str(self.hour)
+        return self.time_str
