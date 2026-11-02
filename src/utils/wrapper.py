@@ -4,9 +4,11 @@ from .database import (
     SocksDatabase,
     ValidationError,
     parse_date,
+    parse_emplid,
     parse_pay_period,
     parse_time,
     parse_year,
+    normalize_shift_segments,
 )
 import re
 
@@ -43,7 +45,7 @@ class GoBack(Exception):
     """Raised when the user types 'b' to cancel the current operation."""
 
 class QuitApp(Exception):
-    """Raised when the user types 'q' to exit the application."""
+    """Raised when the user types 'exit()' to quit from any prompt."""
 
 
 # ─── Wrapper ──────────────────────────────────────────────────────────────────
@@ -87,6 +89,120 @@ class Wrapper:
             self._error(str(exc))
         finally:
             self._footer()
+
+    def create_employee(self):
+        self._header("Employee Creation", "CREATE")
+        try:
+            employees = self.db.list_employees()
+            while True:
+                first = Wrapper._prompt("First name")
+                if first.lower() == "b":
+                    raise GoBack
+                last = Wrapper._prompt("Last name")
+                if last.lower() == "b":
+                    raise GoBack
+                if not first.strip() or not last.strip():
+                    self._warn("Enter both a first and last name.")
+                    continue
+
+                name = " ".join(f"{first.strip()} {last.strip()}".split())
+                normalized_name = name.casefold()
+                if any(" ".join(employee.name.split()).casefold() == normalized_name
+                       for employee in employees):
+                    self._warn(f"An employee named {name} already exists.")
+                    continue
+                break
+
+            while True:
+                raw_emplid = Wrapper._prompt("EMPLID", hint="Required; digits only")
+                if raw_emplid.lower() == "b":
+                    raise GoBack
+                try:
+                    emplid = parse_emplid(raw_emplid)
+                except ValidationError as exc:
+                    self._warn(str(exc))
+                    continue
+                if any(employee.emplid == emplid for employee in employees):
+                    self._warn(f"EMPLID {emplid} is already assigned to another employee.")
+                    continue
+                break
+
+            print("\n    Build the weekly schedule, Sunday through Saturday.")
+            schedule = []
+            for index, weekday in enumerate(WEEKDAYS, start=1):
+                print(f"\n    {weekday} ({index} of 7)")
+                schedule.append(Wrapper._prompt_day_schedule(weekday))
+
+            while True:
+                Wrapper._print_schedule_summary(name, schedule)
+                choice = Wrapper._prompt(
+                    "Save employee or revise a weekday",
+                    hint="Save, or revise: Sun, Mon, Tue, Wed, Thu, Fri, Sat; b cancels",
+                )
+                normalized_choice = " ".join(choice.split()).casefold()
+                if normalized_choice == "b":
+                    raise GoBack
+                if normalized_choice == "save":
+                    break
+
+                weekdays = {
+                    alias: index
+                    for index, day in enumerate(WEEKDAYS)
+                    for alias in (day.casefold(), day[:3].casefold())
+                }
+                weekday_index = weekdays.get(normalized_choice)
+                if weekday_index is None:
+                    self._warn("Enter Save or a weekday name/abbreviation shown above.")
+                    continue
+
+                weekday = WEEKDAYS[weekday_index]
+                print(f"\n    Revising {weekday}.")
+                schedule[weekday_index] = Wrapper._prompt_day_schedule(weekday)
+
+            employee = self.db.create_employee(name, schedule, emplid)
+            cache = guide.Tables.schedule_table.value
+            cache_key = employee.name.lower()
+            cache.schedule_dict[cache_key] = [
+                [list(segment) for segment in day] for day in employee.schedule
+            ]
+            cache.emplid_dict[cache_key] = employee.emplid
+            cache.missed_days_dict[cache_key] = set()
+            cache.extra_days_dict[cache_key] = {}
+            self._success(f"Employee {employee.name} added with EMPLID {employee.emplid}.")
+
+        except GoBack:
+            self._cancelled()
+        except DatabaseError as exc:
+            self._error(str(exc))
+        finally:
+            self._footer()
+
+    @staticmethod
+    def _prompt_day_schedule(weekday: str) -> list[list[str]]:
+        if not Wrapper._yes_no(f"Does this employee work {weekday}?"):
+            return []
+
+        while True:
+            first_start = Wrapper.fetch_time("First start time")
+            first_end = Wrapper.fetch_time("First end time")
+            segments = [(first_start, first_end)]
+            if Wrapper._yes_no("Add a second interval?"):
+                second_start = Wrapper.fetch_time("Second start time")
+                second_end = Wrapper.fetch_time("Second end time")
+                segments.append((second_start, second_end))
+
+            try:
+                return [list(segment) for segment in normalize_shift_segments(segments)]
+            except ValidationError as exc:
+                Wrapper._warn(str(exc))
+                Wrapper._warn(f"Re-enter {weekday}'s intervals.")
+
+    @staticmethod
+    def _print_schedule_summary(name: str, schedule) -> None:
+        print(f"\n  Weekly schedule for {name}")
+        for weekday, segments in zip(WEEKDAYS, schedule):
+            shift = ", then ".join(f"{start} - {end}" for start, end in segments) or "Off"
+            print(f"    {_pad(weekday, 10)} {shift}")
 
     # ── READ ──────────────────────────────────────────────────────────────────
 

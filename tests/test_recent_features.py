@@ -89,6 +89,10 @@ class FakeScheduleTable:
         self.emplid = emplid
         self.missed = set()
         self.extra = {}
+        self.schedule_dict = {self.name: self.schedule}
+        self.emplid_dict = {self.name: self.emplid}
+        self.missed_days_dict = {self.name: self.missed}
+        self.extra_days_dict = {self.name: self.extra}
 
     def has_name(self, name):
         return name.strip().lower() == self.name
@@ -291,6 +295,7 @@ class RecentPromptFeatureTests(unittest.TestCase):
             app_main.main()
 
         plain_output = re.sub(r"\x1b\[[0-9;]*m", "", output.getvalue())
+        self.assertIn("Evans_Timesheet_19.pdf", plain_output)
         self.assertIn(
             "Timesheet is due on 11/16/2026. You will be paid on 12/10/2026.",
             plain_output,
@@ -329,6 +334,7 @@ class RecentPromptFeatureTests(unittest.TestCase):
         expected = [
             "create_pay_period",
             "create_invalid_date",
+            "create_employee",
             "read_pay_period_start_end",
             "read_invalid_dates",
             "read_employee_names_and_emplids",
@@ -339,7 +345,7 @@ class RecentPromptFeatureTests(unittest.TestCase):
             "delete_pay_period",
             "delete_invalid_date",
         ]
-        choices = [str(number) for number in range(1, 12)] + ["q"]
+        choices = [str(number) for number in range(1, 13)] + ["q"]
 
         with redirect_stdout(StringIO()), \
              patch.object(crud_app.wrapper, "Wrapper", return_value=RecordingWrapper()), \
@@ -348,6 +354,19 @@ class RecentPromptFeatureTests(unittest.TestCase):
             crud_app.main()
 
         self.assertEqual(calls, expected)
+
+    def test_crud_menu_displays_employee_creation_and_contiguous_choices(self):
+        output = StringIO()
+        with redirect_stdout(output):
+            crud_app.menu()
+
+        plain_output = re.sub(r"\x1b\[[0-9;]*m", "", output.getvalue())
+        numbers = [
+            int(number)
+            for number in re.findall(r"(?m)^\s*║\s*(\d+)\s{2}", plain_output)
+        ]
+        self.assertEqual(numbers, list(range(1, 13)))
+        self.assertIn("3  New Employee", plain_output)
 
     def test_crud_exit_command_quits_from_menu(self):
         class RecordingWrapper:
@@ -374,6 +393,56 @@ class RecentScheduleCrudTests(unittest.TestCase):
 
     def tearDown(self):
         self.tmp.cleanup()
+
+    def test_new_employee_wizard_collects_validated_week_and_allows_revision(self):
+        existing_schedule = weekly_schedule()
+        self.db.create_employee("Jamie Rivera", existing_schedule, "11111111")
+        wrapper = wrapper_module.Wrapper.__new__(wrapper_module.Wrapper)
+        wrapper.db = self.db
+        cache = FakeScheduleTable(name="not yet saved")
+        inputs = [
+            "JAMIE", "RIVERA",              # Case-insensitive duplicate name.
+            "Taylor", "Ng", "11111111",    # Duplicate EMPLID.
+            "90000001",
+            "n",                              # Sunday off.
+            "y", "9AM", "12PM", "n",       # Monday single interval.
+            "n",                              # Tuesday off.
+            "y", "12PM", "2PM", "y",       # Wednesday split, first try overlaps.
+            "1:30PM", "3PM",
+            "12PM", "2PM", "y", "2:15PM", "3:15PM",
+            "n", "n", "n",                  # Thursday through Saturday off.
+            "wed",                            # Revise Wednesday from the summary.
+            "y", "12PM", "2PM", "y", "2:30PM", "3:30PM",
+            "save",
+        ]
+
+        with use_guide_tables(schedule_table=cache), \
+             patch("builtins.input", side_effect=inputs), \
+             redirect_stdout(StringIO()):
+            wrapper.create_employee()
+
+        employees = self.db.list_employees()
+        created = next(employee for employee in employees if employee.name == "Taylor Ng")
+        self.assertEqual(created.emplid, "90000001")
+        self.assertEqual(created.schedule[1], (("9AM", "12PM"),))
+        self.assertEqual(created.schedule[2], ())
+        self.assertEqual(created.schedule[3], (("12PM", "2PM"), ("2:30PM", "3:30PM")))
+        self.assertEqual(created.schedule[6], ())
+        self.assertEqual(cache.emplid_dict["taylor ng"], "90000001")
+        self.assertEqual(cache.schedule_dict["taylor ng"][3], [["12PM", "2PM"], ["2:30PM", "3:30PM"]])
+
+    def test_new_employee_cancel_before_save_leaves_no_partial_record(self):
+        wrapper = wrapper_module.Wrapper.__new__(wrapper_module.Wrapper)
+        wrapper.db = self.db
+        cache = FakeScheduleTable(name="not yet saved")
+        inputs = ["Taylor", "Ng", "90000001", "n", "n", "n", "n", "n", "n", "n", "b"]
+
+        with use_guide_tables(schedule_table=cache), \
+             patch("builtins.input", side_effect=inputs), \
+             redirect_stdout(StringIO()):
+            wrapper.create_employee()
+
+        self.assertEqual(self.db.list_employees(), [])
 
     def test_schedule_editor_accepts_weekday_and_split_shift_and_retries_overlap(self):
         schedule = weekly_schedule()

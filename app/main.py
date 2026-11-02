@@ -15,7 +15,6 @@ class Color:
 def c(text: str, *codes: str) -> str:
     return "".join(codes) + str(text) + Color.RESET
 
-
 # ─── Control Flow ─────────────────────────────────────────────────────────────
 
 class QuitApp(Exception):
