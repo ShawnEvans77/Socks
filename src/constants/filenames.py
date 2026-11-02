@@ -7,12 +7,6 @@ asset_folder = "resources"
 # database folder
 database_folder = "database"
 
-# json folder
-json_folder = "json"
-
-# json name
-json_name = "schedules.json"
-
 # database name
 database_name = "socks.db"
 

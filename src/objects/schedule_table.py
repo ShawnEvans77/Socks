@@ -1,54 +1,56 @@
-from ..constants import filenames
 from typing import List
-import json
+
+from ..utils.database import SocksDatabase
+
 
 class ScheduleTable:
-    """The ScheduleTable takes schedule data from a file and converts it into an easy to use dictionary.
-    This is how we get a person's schedule given their name."""
+    """Loads employee schedules and EMPLIDs from the Socks database."""
 
     def __init__(self):
+        self.db = SocksDatabase()
         self.schedule_dict = {}
+        self.emplid_dict = {}
         self.missed_days_dict = {}
         self.extra_days_dict = {}
 
-        with open(f"{filenames.asset_folder}/{filenames.json_folder}/{filenames.json_name}", "r") as file:
-            data = json.load(file)
+        self.db.ensure_schema()
+        for employee in self.db.list_employees():
+            name = employee.name.lower()
+            self.schedule_dict[name] = [list(day) for day in employee.schedule]
+            self.emplid_dict[name] = employee.emplid
+            self.missed_days_dict[name] = set()
+            self.extra_days_dict[name] = {}
 
-            employees = data['employees']
+    def get(self, name: str) -> List[List[tuple[str, str]]]:
+        """Return Sunday-through-Saturday lists of work intervals."""
 
-            for employee in employees:
+        return self.schedule_dict[name.lower()]
 
-                name = employee['name'].lower()
-                portions = employee['schedule'].values()
-                schedule = []
-
-                for portion in portions:
-                    start_end = [""] * 2
-                    start_end[0], start_end[1] = portion[0], portion[1]
-
-                    schedule.append(start_end)
-
-                self.schedule_dict[name] = schedule
-                self.missed_days_dict[name] = {}
-                self.extra_days_dict[name] = {}
-
-    def get(self, name: str) -> List[List]:
-        '''Recieves a person's name as input, returns their schedule.'''
-        
-        return self.schedule_dict[name]
-    
     def has_name(self, name: str) -> bool:
-        '''Returns if this person's name exists in the schedule table.'''
+        """Return whether an employee exists in the database."""
 
-        return name in self.schedule_dict.keys()
-    
-    def add_missed_days(self, name: str, set: set):
-        '''Adds a person's missed days to a person's schedule.'''
+        return name.strip().lower() in self.schedule_dict
 
-        self.missed_days_dict[name.lower()] = set
+    def get_emplid(self, name: str) -> str | None:
+        """Return the employee's saved EMPLID, if one has been entered."""
+
+        return self.emplid_dict[name.strip().lower()]
+
+    def set_emplid(self, name: str, emplid: str) -> str:
+        """Save an employee's EMPLID in the database and refresh the cache."""
+
+        normalized_name = name.strip().lower()
+        saved_emplid = self.db.set_employee_emplid(name, emplid)
+        self.emplid_dict[normalized_name] = saved_emplid
+        return saved_emplid
+
+    def add_missed_days(self, name: str, missed_days: set):
+        """Record an employee's missed dates for the current timesheet."""
+
+        self.missed_days_dict[name.lower()] = missed_days
 
     def get_missed_days(self, name: str) -> set:
-        '''Returns all of a person's missed days.'''
+        """Return the employee's missed dates for the current timesheet."""
 
         return self.missed_days_dict[name.lower()]
 

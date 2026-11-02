@@ -5,9 +5,12 @@ from .database import (
     ValidationError,
     parse_date,
     parse_pay_period,
+    parse_time,
     parse_year,
 )
 import re
+
+WEEKDAYS = ("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
 
 # ─── ANSI Colors ──────────────────────────────────────────────────────────────
 
@@ -46,7 +49,7 @@ class QuitApp(Exception):
 # ─── Wrapper ──────────────────────────────────────────────────────────────────
 
 class Wrapper:
-    """SQLite3 wrapper supporting CRUD for payroll schedules and invalid dates."""
+    """Terminal CRUD wrapper for payroll data and employee schedules."""
 
     def __init__(self):
         self.db = SocksDatabase()
@@ -141,6 +144,51 @@ class Wrapper:
         print(foot)
         print()
 
+    def read_employee_names_and_emplids(self):
+        employees = self.db.list_employees()
+        if not employees:
+            print(c("\n  No employee records.\n", Color.DIM))
+            return
+
+        name_width = max(len("Employee"), *(len(employee.name) for employee in employees))
+        id_width = max(len("EMPLID"), *(len(employee.emplid or "NOT SET") for employee in employees))
+        border = f"  ┌{'─' * (name_width + 2)}┬{'─' * (id_width + 2)}┐"
+        middle = f"  ├{'─' * (name_width + 2)}┼{'─' * (id_width + 2)}┤"
+        footer = f"  └{'─' * (name_width + 2)}┴{'─' * (id_width + 2)}┘"
+
+        print()
+        print(c("  Employees", Color.BOLD + Color.CYAN))
+        print(c(border, Color.DIM))
+        print(
+            f"  │ {_pad(c('Employee', Color.BOLD), name_width)} │ "
+            f"{_pad(c('EMPLID', Color.BOLD), id_width)} │"
+        )
+        print(c(middle, Color.DIM))
+        for employee in employees:
+            emplid = employee.emplid or "NOT SET"
+            print(f"  │ {_pad(employee.name, name_width)} │ {_pad(emplid, id_width)} │")
+        print(c(footer, Color.DIM))
+        print()
+
+    def read_employee_schedules(self):
+        employees = self.db.list_employees()
+        if not employees:
+            print(c("\n  No employee schedules.\n", Color.DIM))
+            return
+
+        weekdays = ("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+        print()
+        print(c("  Employee Schedules", Color.BOLD + Color.CYAN))
+        for employee in employees:
+            emplid = employee.emplid or "NOT SET"
+            print(f"\n  {c(employee.name, Color.BOLD)}  {c(f'EMPLID: {emplid}', Color.DIM)}")
+            for weekday, segments in zip(weekdays, employee.schedule):
+                shift = ", then ".join(
+                    f"{start} - {end}" for start, end in segments
+                ) or "Off"
+                print(f"    {_pad(weekday, 10)} {shift}")
+        print()
+
     # ── UPDATE ────────────────────────────────────────────────────────────────
 
     def update_pay_period(self):
@@ -167,6 +215,85 @@ class Wrapper:
             new_str_in = Wrapper.fetch_date(f"Replacement for {c(date_str, Color.YELLOW)}")
             self.db.update_invalid_date(date_str, new_str_in)
             self._success(f"Updated: {date_str} {c('→', Color.DIM)} {new_str_in}")
+
+        except GoBack:
+            self._cancelled()
+        except DatabaseError as exc:
+            self._error(str(exc))
+        finally:
+            self._footer()
+
+    def update_employee_schedule(self):
+        self._header("Employee Schedule Update", "UPDATE")
+        try:
+            employees = self.db.list_employees()
+            if not employees:
+                self._error("No employee records are available.")
+                return
+
+            self.read_employee_names_and_emplids()
+            while True:
+                raw = Wrapper._prompt(
+                    "Employee name", hint="First and last name; capitalization does not matter"
+                )
+                if raw.lower() == "b":
+                    raise GoBack
+                entered_name = " ".join(raw.split()).casefold()
+                employee = next(
+                    (
+                        row for row in employees
+                        if " ".join(row.name.split()).casefold() == entered_name
+                    ),
+                    None,
+                )
+                if employee is not None:
+                    break
+                self._warn("Enter an employee's first and last name as shown in the table.")
+
+            print("\n    Valid weekdays: Sunday (Sun), Monday (Mon), Tuesday (Tue), Wednesday (Wed).")
+            print("                    Thursday (Thu), Friday (Fri), Saturday (Sat).")
+            weekday = Wrapper.fetch_weekday("Weekday to update")
+            weekday_name = WEEKDAYS[weekday]
+            current = employee.schedule[weekday]
+            current_text = ", then ".join(
+                f"{start} - {end}" for start, end in current
+            ) or "Off"
+            print(f"\n    Weekday selected: {weekday_name}.")
+            print(f"    Current recurring {weekday_name} schedule: {current_text}")
+            print(f"    This change applies to every {weekday_name} for this employee.")
+
+            split = Wrapper._yes_no("Is this a split schedule?")
+            while True:
+                start = Wrapper.fetch_time(
+                    "First start time, or OFF to clear this weekday", allow_off=True
+                )
+                if start is None:
+                    segments = []
+                else:
+                    end = Wrapper.fetch_time("First end time")
+                    segments = [(start, end)]
+                    if split:
+                        second_start = Wrapper.fetch_time("Second start time")
+                        second_end = Wrapper.fetch_time("Second end time")
+                        segments.append((second_start, second_end))
+
+                try:
+                    self.db.set_employee_schedule(employee.name, weekday, segments)
+                    break
+                except ValidationError as exc:
+                    self._warn(str(exc))
+                    self._warn("Please re-enter the intervals for this weekday.")
+
+            cache = guide.Tables.schedule_table.value
+            if cache.has_name(employee.name):
+                cache.schedule_dict[employee.name.lower()][weekday] = [
+                    list(segment) for segment in segments
+                ]
+
+            updated = ", then ".join(
+                f"{start} - {end}" for start, end in segments
+            ) or "Off"
+            self._success(f"{weekday_name} schedule updated: {updated}.")
 
         except GoBack:
             self._cancelled()
@@ -261,8 +388,6 @@ class Wrapper:
 
             if command == "b":
                 raise GoBack
-            if command == "q":
-                raise QuitApp
             try:
                 return parse_pay_period(raw, first, last)
             except ValidationError as exc:
@@ -277,13 +402,57 @@ class Wrapper:
 
             if raw.lower() == "b":
                 raise GoBack
-            if raw.lower() == "q":
-                raise QuitApp
             try:
                 return parse_date(raw)
             except ValidationError as exc:
                 Wrapper._warn(str(exc))
                 continue
+
+    @staticmethod
+    def fetch_weekday(prompt: str) -> int:
+        """Prompt for a weekday, accepting full names or 3-letter forms."""
+        aliases = {
+            alias: index
+            for index, day in enumerate(WEEKDAYS)
+            for alias in (day.casefold(), day[:3].casefold())
+        }
+        while True:
+            raw = Wrapper._prompt(prompt, hint="Full weekday name or 3-letter abbreviation")
+            if raw.lower() == "b":
+                raise GoBack
+            weekday = aliases.get(raw.casefold())
+            if weekday is not None:
+                return weekday
+            Wrapper._warn("Enter a weekday such as Monday or Mon.")
+
+    @staticmethod
+    def fetch_time(prompt: str, allow_off: bool = False) -> str | None:
+        """Prompt for a validated 12-hour time, optionally accepting OFF."""
+        hint = "12-hour time, such as 9AM or 2:15PM"
+        if allow_off:
+            hint += "; enter OFF to clear the weekday"
+        while True:
+            raw = Wrapper._prompt(prompt, hint=hint)
+            if raw.lower() == "b":
+                raise GoBack
+            if allow_off and raw.upper() == "OFF":
+                return None
+            try:
+                return parse_time(raw)
+            except ValidationError as exc:
+                Wrapper._warn(str(exc))
+
+    @staticmethod
+    def _yes_no(prompt: str) -> bool:
+        while True:
+            raw = Wrapper._prompt(prompt, hint="y / n").lower()
+            if raw in ("y", "yes"):
+                return True
+            if raw in ("n", "no"):
+                return False
+            if raw == "b":
+                raise GoBack
+            Wrapper._warn("Please enter y or n.")
 
     @staticmethod
     def fetch_year(prompt: str) -> str:
@@ -293,8 +462,6 @@ class Wrapper:
 
             if raw.lower() == "b":
                 raise GoBack
-            if raw.lower() == "q":
-                raise QuitApp
             try:
                 return parse_year(raw)
             except ValidationError as exc:
@@ -315,10 +482,10 @@ class Wrapper:
         print(f"    {c('⚠  ' + message, Color.YELLOW)}")
         while True:
             raw = input(c("    Confirm [y/n]: ", Color.DIM)).strip().lower()
+            if raw == "exit()":
+                raise QuitApp
             if raw in ("y", "yes"):
                 return True
-            if raw == "q":
-                raise QuitApp
             if raw == "b":
                 raise GoBack
             if raw in ("n", "no", ""):
@@ -330,7 +497,10 @@ class Wrapper:
         """Render a styled input prompt with an optional format hint."""
         if hint:
             print(c(f"  ({hint})", Color.DIM))
-        return input(c(f"  ▶ {label}: ", Color.CYAN)).strip()
+        raw = input(c(f"  ▶ {label}: ", Color.CYAN)).strip()
+        if raw.casefold() == "exit()":
+            raise QuitApp
+        return raw
 
     # ─── Display Helpers ──────────────────────────────────────────────────────
 

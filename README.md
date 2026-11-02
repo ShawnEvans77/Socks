@@ -1,118 +1,37 @@
-# Socks 🧦
+# Socks
 
-Socks is a command line application that automatically generates Brooklyn College part-time worker timesheets.
+Socks is a command line application that generates Brooklyn College part-time worker timesheets.
 
 ## Installation
 ```
 git clone https://github.com/ShawnEvans77/Socks
-
+cd Socks
 pip install -r requirements.txt
 ```
 
 ## Usage
-
-This is what the program's interface looks like.
-
 ```
-$ py -m app.main
-
-
-  ███████╗  ██████╗  ██████╗██╗  ██╗███████╗
-  ██╔════╝ ██╔═══██╗██╔════╝██║ ██╔╝██╔════╝
-  ███████╗ ██║   ██║██║     █████╔╝ ███████╗ 
-  ╚════██║ ██║   ██║██║     ██╔═██╗ ╚════██║ 
-  ███████║ ╚██████╔╝╚██████╗██║  ██╗███████║ 
-  ╚══════╝  ╚═════╝  ╚═════╝╚═╝  ╚═╝╚══════╝ 
-
-  ══════════════════════════════════════════════════
-  [q] at anytime to quit. [b] to go back
-  ══════════════════════════════════════════════════
-
-  ──────────────────────────────────────────────────
-  [1/3]  Employee
-  ──────────────────────────────────────────────────
-
-  ▶ First name: shawn
-  ▶ Last name: evans
-  ✔  Welcome, Shawn Evans!
-
-  ──────────────────────────────────────────────────
-  [2/3]  Pay Period
-  ──────────────────────────────────────────────────
-
-  (y / n)
-  ▶ Auto-detect current pay period?: y
-  ℹ  Detected pay period 5  04/19  →  05/02
-
-  ──────────────────────────────────────────────────
-  [3/3]  Missed Days
-  ──────────────────────────────────────────────────
-
-  (y / n)
-  ▶ Did you miss any days this pay period?: n
-  ℹ  No missed days — all slots will be filled.
-
-  ══════════════════════════════════════════════════
-  Generating timesheet...
-  ══════════════════════════════════════════════════
-
-  ✔  Saved  →  Evans_Timesheet_5.pdf
-  ──────────────────────────────────────────────────
-  Thanks for using Socks, Shawn! 🧦
-  ──────────────────────────────────────────────────
+py -m app.main
 ```
 
-Once the program finishes, a filled out timesheet is placed in the timesheets directory.
+Enter an employee's name and required EMPLID, then choose a pay period. The program uses the employee's saved weekly schedule and asks about missed days and extra work. Extra work times accept 12-hour input, including minutes, such as `2:15PM`. The program checks that start and end times make sense and reports the timesheet due date and pay date when finished.
 
-The application uses an SQLite based database, socks.db, stored in the resources directory. This database can be queried easily through the execution of crud.py. 
+An employee can have up to two work intervals per weekday. Split intervals are shown in the Time In and Time Out fields, with Meal Period left blank. Both intervals count toward the day's total hours.
 
+Generated timesheets are saved in `timesheets`. PDFs are flattened and are not editable. Each sheet includes the employee's EMPLID, the employee's name in Prepared by, a checked CA box, and department number `885-54`.
+
+## Database and CRUD
+The application uses `resources/database/socks.db` for pay periods, timesheet due dates and pay dates, invalid dates, employee names, EMPLIDs, and weekly work intervals. The former `schedules.json` file is no longer used.
+
+Run the CRUD interface with:
 ```
-$ py -m crud.crud
-  ╔════════════════════════════════════════════╗
-  ║ 🧦  SOCKS CRUD INTERFACE                   ║
-  ║ [b] back inside any operation  [q] quit    ║
-  ╠════════════════════════════════════════════╣
-  ║   CREATE                                   ║
-  ║   1  New Pay Period                        ║
-  ║   2  New Invalid Date                      ║
-  ║   READ                                     ║
-  ║   3  View Pay Period Schedule              ║
-  ║   4  View Invalid Dates                    ║
-  ║   UPDATE                                   ║
-  ║   5  Update Pay Period                     ║
-  ║   6  Update Invalid Date                   ║
-  ║   DELETE                                   ║
-  ║   7  Delete Pay Period(s)                  ║
-  ║   8  Delete Invalid Date(s)                ║
-  ╠════════════════════════════════════════════╣
-  ║   m  Show menu                             ║
-  ╚════════════════════════════════════════════╝
+py -m crud.crud
 ```
 
-Schedules are stored in schedules.json.
+CRUD can create, view, update, and delete pay periods and invalid dates. It can also display employee names, EMPLIDs, and weekly schedules, and update an employee's recurring weekday schedule by name or 3-letter abbreviation with one or two work intervals.
 
-```
-{
-    "employees": [
-        {  
-            "name": "Shawn Evans",
-            "schedule": {
-                "sunday": ["", ""],
-                "monday": ["1PM", "4PM"],
-                "tuesday": ["", ""],
-                "wednesday": ["12PM", "2PM"],
-                "thursday": ["3PM", "6PM"],
-                "friday": ["",""],
-                "saturday": ["",""]
-            }  
-        }
-    ]
-}
-```
-
-# Tests
-To test the application, type:
-
+## Tests
+Run the test suite with:
 ```
 python -m unittest discover -s tests
 ```

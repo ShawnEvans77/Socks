@@ -21,7 +21,7 @@ def menu():
     bot    = c("  ╚" + "═" * _W + "╝", Color.CYAN)
 
     title  = c("🧦  SOCKS CRUD INTERFACE", Color.BOLD + Color.CYAN)
-    hint   = c("[b] back inside any operation  [q] quit", Color.DIM)
+    hint   = c("[b] back  [q] quit here  [exit()] quit all", Color.DIM)
 
     def group(label: str, color: str) -> str:
         return c(label, color + Color.BOLD)
@@ -39,9 +39,12 @@ def menu():
     print(_row(group("  READ", Color.BLUE)))
     print(_row(opt("3", "View Pay Period Schedule", Color.BLUE)))
     print(_row(opt("4", "View Invalid Dates",       Color.BLUE)))
+    print(_row(opt("9", "View Employee Names & EMPLIDs", Color.BLUE)))
+    print(_row(opt("10", "View Employee Schedules",      Color.BLUE)))
     print(_row(group("  UPDATE", Color.YELLOW)))
     print(_row(opt("5", "Update Pay Period",        Color.YELLOW)))
     print(_row(opt("6", "Update Invalid Date",      Color.YELLOW)))
+    print(_row(opt("11", "Update Employee Schedule", Color.YELLOW)))
     print(_row(group("  DELETE", Color.RED)))
     print(_row(opt("7", "Delete Pay Period(s)",     Color.RED)))
     print(_row(opt("8", "Delete Invalid Date(s)",   Color.RED)))
@@ -60,14 +63,19 @@ def main():
     while True:
         try:
             choice = input(c("  ▶ Selection: ", Color.CYAN)).strip().lower()
+            if choice == "exit()":
+                raise QuitApp
 
             match choice:
                 case "1": wp.create_pay_period()
                 case "2": wp.create_invalid_date()
                 case "3": wp.read_pay_period_start_end()
                 case "4": wp.read_invalid_dates()
+                case "9": wp.read_employee_names_and_emplids()
+                case "10": wp.read_employee_schedules()
                 case "5": wp.update_pay_period()
                 case "6": wp.update_invalid_date()
+                case "11": wp.update_employee_schedule()
                 case "7": wp.delete_pay_period()
                 case "8": wp.delete_invalid_date()
                 case "m": menu()

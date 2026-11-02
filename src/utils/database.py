@@ -8,6 +8,7 @@ import sqlite3
 
 DATE_FORMAT = "%m/%d/%Y"
 YEAR_PATTERN = r"(19|20)\d\d"
+TIME_PATTERN = r"(1[0-2]|0?[1-9])(?::([0-5]\d))?\s*(AM|PM)"
 
 
 class DatabaseError(Exception):
@@ -33,6 +34,13 @@ class PayPeriod:
     end_date: str
     due_date: str
     pay_date: str
+
+
+@dataclass(frozen=True)
+class Employee:
+    name: str
+    emplid: str | None
+    schedule: tuple[tuple[tuple[str, str], ...], ...]
 
 
 def default_database_path() -> str:
@@ -75,6 +83,63 @@ def parse_year(value: str) -> str:
     return value
 
 
+def parse_emplid(value: str) -> str:
+    value = value.strip()
+    if not value or not (value.isascii() and value.isdigit()):
+        raise ValidationError("EMPLID is required and must contain digits only.")
+    return value
+
+
+def parse_time(value: str) -> str:
+    """Normalize a 12-hour time while preserving minute precision."""
+    value = value.strip().upper()
+    match = re.fullmatch(TIME_PATTERN, value)
+    if not match:
+        raise ValidationError("Time must look like 9AM, 2:15PM, or 2:15 PM.")
+
+    hour, minute, meridiem = match.groups()
+    hour = str(int(hour))
+    return f"{hour}:{minute}{meridiem}" if minute else f"{hour}{meridiem}"
+
+
+def time_minutes(value: str) -> int:
+    """Return minutes since midnight for a validated 12-hour time."""
+    normalized = parse_time(value)
+    match = re.fullmatch(TIME_PATTERN, normalized)
+    hour, minute, meridiem = match.groups()
+    hour = int(hour) % 12 + (12 if meridiem == "PM" else 0)
+    return hour * 60 + int(minute or 0)
+
+
+def normalize_shift_segments(segments) -> tuple[tuple[str, str], ...]:
+    """Accept either one legacy start/end pair or an ordered list of shifts."""
+    if isinstance(segments, (tuple, list)) and len(segments) == 2 and all(
+        isinstance(value, str) for value in segments
+    ):
+        raw_segments = [] if not any(str(value).strip() for value in segments) else [segments]
+    else:
+        raw_segments = list(segments)
+
+    if len(raw_segments) > 2:
+        raise ValidationError("A day can have at most two work intervals.")
+
+    normalized = []
+    previous_end = None
+    for segment in raw_segments:
+        if len(segment) != 2:
+            raise ValidationError("Each work interval needs a start and end time.")
+        start, end = (parse_time(str(value)) for value in segment)
+        start_minutes, end_minutes = time_minutes(start), time_minutes(end)
+        if end_minutes <= start_minutes:
+            raise ValidationError("Each interval's end must be later than its start.")
+        if previous_end is not None and start_minutes < previous_end:
+            raise ValidationError("Work intervals cannot overlap or be out of order.")
+        normalized.append((start, end))
+        previous_end = end_minutes
+
+    return tuple(normalized)
+
+
 def parse_pay_period(value: str, first: int = 1, last: int = 26) -> str:
     value = value.strip()
 
@@ -90,13 +155,15 @@ def add_period_end(start_date: str) -> str:
 
 
 class SocksDatabase:
-    """Database service for Socks pay periods and invalid dates."""
+    """Database service for payroll periods, invalid dates, employees, and shifts."""
 
     def __init__(self, path: str | None = None):
         self.path = path or default_database_path()
 
     def connect(self):
-        return sqlite3.connect(self.path)
+        con = sqlite3.connect(self.path)
+        con.execute("PRAGMA foreign_keys = ON")
+        return con
 
     @contextmanager
     def connection(self):
@@ -122,6 +189,45 @@ class SocksDatabase:
                 """
             )
             cur.execute("CREATE TABLE IF NOT EXISTS days_off(invalid_dates TEXT)")
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS employees(
+                    employee_id INTEGER PRIMARY KEY,
+                    name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+                    emplid TEXT UNIQUE
+                )
+                """
+            )
+            legacy_schedule_exists = cur.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='employee_schedule'"
+            ).fetchone()
+            segments_existed = cur.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='employee_schedule_segments'"
+            ).fetchone()
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS employee_schedule_segments(
+                    employee_id INTEGER NOT NULL REFERENCES employees(employee_id) ON DELETE CASCADE,
+                    weekday INTEGER NOT NULL CHECK(weekday BETWEEN 0 AND 6),
+                    segment_index INTEGER NOT NULL CHECK(segment_index BETWEEN 0 AND 1),
+                    start_time TEXT NOT NULL,
+                    end_time TEXT NOT NULL,
+                    PRIMARY KEY(employee_id, weekday, segment_index)
+                )
+                """
+            )
+
+            if legacy_schedule_exists and not segments_existed:
+                legacy_rows = cur.execute(
+                    "SELECT employee_id, weekday, start_time, end_time FROM employee_schedule"
+                ).fetchall()
+                cur.executemany(
+                    """INSERT INTO employee_schedule_segments
+                       (employee_id, weekday, segment_index, start_time, end_time)
+                       VALUES(?,?,0,?,?)""",
+                    [row for row in legacy_rows if row[2] and row[3]],
+                )
+                cur.execute("DROP TABLE employee_schedule")
 
             columns = {
                 row[1] for row in cur.execute("PRAGMA table_info(payroll_schedule)").fetchall()
@@ -213,6 +319,114 @@ class SocksDatabase:
             ).fetchall()
 
         return [row[0] for row in rows]
+
+    def list_employees(self) -> list[Employee]:
+        with self.connection() as con:
+            employees = con.execute(
+                "SELECT employee_id, name, emplid FROM employees ORDER BY employee_id"
+            ).fetchall()
+            shifts = con.execute(
+                "SELECT employee_id, weekday, start_time, end_time "
+                "FROM employee_schedule_segments "
+                "ORDER BY employee_id, weekday, segment_index"
+            ).fetchall()
+
+        schedules = {row[0]: [[] for _ in range(7)] for row in employees}
+        for employee_id, weekday, start_time, end_time in shifts:
+            schedules[employee_id][weekday].append((start_time, end_time))
+
+        return [
+            Employee(
+                name,
+                emplid,
+                tuple(tuple(day) for day in schedules[employee_id]),
+            )
+            for employee_id, name, emplid in employees
+        ]
+
+    def create_employee(
+        self, name: str, schedule, emplid: str | None = None
+    ) -> Employee:
+        name = name.strip()
+        if not name:
+            raise ValidationError("Employee name cannot be empty.")
+        if len(schedule) != 7:
+            raise ValidationError("An employee schedule must contain seven weekdays.")
+
+        normalized_schedule = tuple(normalize_shift_segments(day) for day in schedule)
+
+        normalized_emplid = parse_emplid(emplid) if emplid is not None else None
+        with self.connection() as con:
+            cur = con.cursor()
+            try:
+                cur.execute("INSERT INTO employees(name, emplid) VALUES(?,?)", (name, normalized_emplid))
+            except sqlite3.IntegrityError as exc:
+                raise DuplicateError("Employee name or EMPLID already exists.") from exc
+            employee_id = cur.lastrowid
+            cur.executemany(
+                """
+                INSERT INTO employee_schedule_segments
+                (employee_id, weekday, segment_index, start_time, end_time)
+                VALUES(?,?,?,?,?)
+                """,
+                [
+                    (employee_id, weekday, index, start, end)
+                    for weekday, segments in enumerate(normalized_schedule)
+                    for index, (start, end) in enumerate(segments)
+                ],
+            )
+
+        return Employee(name, normalized_emplid, normalized_schedule)
+
+    def set_employee_schedule(self, name: str, weekday: int, segments) -> None:
+        """Replace one Sunday-first weekday schedule with up to two intervals."""
+        if not isinstance(weekday, int) or not 0 <= weekday <= 6:
+            raise ValidationError("Weekday must be an integer from 0 (Sunday) to 6 (Saturday).")
+        normalized = normalize_shift_segments(segments)
+        with self.connection() as con:
+            cur = con.cursor()
+            employee = cur.execute(
+                "SELECT employee_id FROM employees WHERE name=? COLLATE NOCASE", (name.strip(),)
+            ).fetchone()
+            if not employee:
+                raise NotFoundError(f"Employee {name!r} does not exist.")
+            employee_id = employee[0]
+            cur.execute(
+                "DELETE FROM employee_schedule_segments WHERE employee_id=? AND weekday=?",
+                (employee_id, weekday),
+            )
+            cur.executemany(
+                """INSERT INTO employee_schedule_segments
+                   (employee_id, weekday, segment_index, start_time, end_time)
+                   VALUES(?,?,?,?,?)""",
+                [
+                    (employee_id, weekday, index, start, end)
+                    for index, (start, end) in enumerate(normalized)
+                ],
+            )
+
+    def set_employee_emplid(self, name: str, emplid: str) -> str:
+        name = name.strip()
+        emplid = parse_emplid(emplid)
+        with self.connection() as con:
+            cur = con.cursor()
+            if not cur.execute(
+                "SELECT employee_id FROM employees WHERE name=? COLLATE NOCASE", (name,)
+            ).fetchone():
+                raise NotFoundError(f"Employee {name!r} does not exist.")
+            try:
+                cur.execute("UPDATE employees SET emplid=? WHERE name=? COLLATE NOCASE", (emplid, name))
+            except sqlite3.IntegrityError as exc:
+                raise DuplicateError(f"EMPLID {emplid} is already assigned to another employee.") from exc
+
+        return emplid
+
+    def delete_employee(self, name: str) -> None:
+        name = name.strip()
+        with self.connection() as con:
+            result = con.execute("DELETE FROM employees WHERE name=? COLLATE NOCASE", (name,))
+            if result.rowcount == 0:
+                raise NotFoundError(f"Employee {name!r} does not exist.")
 
     def create_pay_period(
         self, pay_period: str, start_date: str, due_date: str, pay_date: str

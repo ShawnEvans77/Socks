@@ -1,7 +1,8 @@
 from src.objects import sheet_writer
 from src.objects.clock import Clock
 from src.constants import guide, filenames
-import datetime, re
+from src.utils.database import DatabaseError
+import datetime
 
 
 # ─── ANSI Colors ──────────────────────────────────────────────────────────────
@@ -46,19 +47,19 @@ def _section(step: int, total: int, title: str) -> None:
     _blank()
 
 def _prompt(label: str, hint: str = "") -> str:
-    """Styled input. Raises control-flow exceptions for q/back commands."""
+    """Styled input. Raises control-flow exceptions for exit/back commands."""
     if hint:
         print(c(f"  ({hint})", Color.DIM))
     raw = input(c(f"  ▶ {label}: ", Color.CYAN)).strip()
     command = raw.lower()
-    if command == "q":
+    if command == "exit()":
         raise QuitApp
     if command == "b":
         raise BackApp
     return raw
 
 def _yn(label: str) -> bool:
-    """Binary yes/no prompt. Raises QuitApp on 'q'."""
+    """Binary yes/no prompt. Raises QuitApp on 'exit()'."""
     while True:
         raw = _prompt(label, hint="y / n").lower()
         if raw == "y": return True
@@ -83,13 +84,13 @@ def _banner() -> None:
         print(c(line, Color.CYAN + Color.BOLD))
     _blank()
     _rule("═")
-    print(c("  [q] at anytime to quit. [b] to go back", Color.DIM))
+    print(c("  [exit()] at any prompt to quit. [b] to go back", Color.DIM))
     _rule("═")
 
 
 # ─── Step 1: Employee ─────────────────────────────────────────────────────────
 
-def _step_employee() -> tuple[str, str]:
+def _step_employee() -> tuple[str, str, str]:
     _section(1, 3, "Employee")
 
     while True:
@@ -97,9 +98,26 @@ def _step_employee() -> tuple[str, str]:
         last  = _prompt("Last name").lower()
         full  = f"{first} {last}"
 
-        if guide.Tables.schedule_table.value.has_name(full):
+        schedule_table = guide.Tables.schedule_table.value
+        if schedule_table.has_name(full):
             _success(f"Welcome, {c(first.title() + ' ' + last.title(), Color.BOLD)}!")
-            return first, last
+            saved_emplid = schedule_table.get_emplid(full)
+            if saved_emplid:
+                _info("Using the EMPLID saved for this employee.")
+                return first, last, saved_emplid
+
+            _info("This employee needs an EMPLID saved before a timesheet can be made.")
+            while True:
+                emplid = _prompt("EMPLID (required)")
+                if emplid.isascii() and emplid.isdigit():
+                    try:
+                        schedule_table.set_emplid(full, emplid)
+                    except DatabaseError as exc:
+                        _warn(str(exc))
+                        continue
+                    _success("EMPLID saved to this employee's database record.")
+                    return first, last, emplid
+                _warn("EMPLID is required and must contain digits only.")
 
         _error(f"No employee named {first.title()} {last.title()} found.")
         _blank()
@@ -242,15 +260,16 @@ def _step_extra_days(first: str, last: str, pay_period: int) -> None:
 
 def _fetch_work_time(label: str) -> str:
     while True:
-        raw = _prompt(label, hint="12-hour time, such as 9AM or 1PM").upper()
-        if re.fullmatch(r"(?:1[0-2]|[1-9])(?:AM|PM)", raw):
-            return raw
-        _warn("Enter a valid time such as 9AM or 1PM.")
+        raw = _prompt(label, hint="12-hour time, such as 9AM, 2:15PM, or 2:15 PM").upper()
+        try:
+            return Clock(raw).time_str
+        except (ValueError, DatabaseError):
+            _warn("Enter a valid time such as 9AM or 2:15PM.")
 
 
 # ─── Generate ─────────────────────────────────────────────────────────────────
 
-def _generate(first: str, last: str, pay_period: int) -> str:
+def _generate(first: str, last: str, pay_period: int, emplid: str) -> str:
     _blank()
     _rule("═")
     print(f"  {c('Generating timesheet...', Color.BOLD + Color.WHITE)}")
@@ -259,7 +278,7 @@ def _generate(first: str, last: str, pay_period: int) -> str:
 
     input_path = f"{filenames.asset_folder}/{filenames.pdf_input_folder}"
     sheet = sheet_writer.SheetWriter(
-        f"{input_path}/{filenames.starting_pdf}", last, first, pay_period
+        f"{input_path}/{filenames.starting_pdf}", last, first, pay_period, emplid
     )
     sheet.write_timesheet()
 
@@ -286,20 +305,21 @@ def main():
     step = 1
     first = None
     last = None
+    emplid = ""
     pay_period = None
 
     try:
         while True:
             try:
                 if step == 1:
-                    first, last = _step_employee()
+                    first, last, emplid = _step_employee()
                     step = 2
                 elif step == 2:
                     pay_period = _step_pay_period()
                     step = 3
                 elif step == 3:
                     _step_work_days(first, last, pay_period)
-                    file_name = _generate(first, last, pay_period)
+                    file_name = _generate(first, last, pay_period, emplid)
 
                     _success(f"Saved  →  {c(file_name, Color.BOLD + Color.WHITE)}")
                     pay_table = guide.Tables.pay_table.value
