@@ -1,40 +1,110 @@
 # Socks
 
-Socks is a command line application that generates Brooklyn College part-time worker timesheets.
+A command line timesheet generator for Brooklyn College part-time workers.
 
-## Installation
-```
+## Setup
+```sh
 git clone https://github.com/ShawnEvans77/Socks
 cd Socks
 pip install -r requirements.txt
 ```
 
-## Usage
-```
+## Run
+```sh
 py -m app.main
 ```
 
-Enter an employee's name and required EMPLID, then choose a pay period. The program uses the employee's saved weekly schedule and asks about missed days and extra work. Extra work times accept 12-hour input, including minutes, such as `2:15PM`. The program checks that start and end times make sense and reports the timesheet due date and pay date when finished.
+### Main app
+```text
+  ███████╗  ██████╗  ██████╗██╗  ██╗███████╗
+  ██╔════╝ ██╔═══██╗██╔════╝██║ ██╔╝██╔════╝
+  ███████╗ ██║   ██║██║     █████╔╝ ███████╗
+  ╚════██║ ██║   ██║██║     ██╔═██╗ ╚════██║
+  ███████║ ╚██████╔╝╚██████╗██║  ██╗███████║
+  ╚══════╝  ╚═════╝  ╚═════╝╚═╝  ╚═╝╚══════╝
 
-An employee can have up to two work intervals per weekday. Split intervals are shown in the Time In and Time Out fields, with Meal Period left blank. Both intervals count toward the day's total hours.
+  ══════════════════════════════════════════════════
+  [exit()] at any prompt to quit. [b] to go back
+  ══════════════════════════════════════════════════
 
-Generated timesheets are saved in `timesheets`. PDFs are flattened and are not editable. Each sheet includes the employee's EMPLID, the employee's name in Prepared by, a checked CA box, and department number `885-54`.
+  ──────────────────────────────────────────────────
+  [1/3]  Employee
+  ──────────────────────────────────────────────────
 
-## Database and CRUD
-The application uses `resources/database/socks.db` for pay periods, timesheet due dates and pay dates, invalid dates, employee names, EMPLIDs, and weekly work intervals. The former `schedules.json` file is no longer used.
+  ▶ First name: shawn
+  ▶ Last name: evans
+  ✔  Welcome, Shawn Evans!
+  ℹ  Using the EMPLID saved for this employee.
 
-Run the CRUD interface with:
+  ──────────────────────────────────────────────────
+  [2/3]  Pay Period
+  ──────────────────────────────────────────────────
+
+  (y / n)
+  ▶ Auto-detect current pay period?: y
+  ℹ  Detected pay period 19  11/01  →  11/14
+
+  ──────────────────────────────────────────────────
+  [3/3]  Work Days
+  ──────────────────────────────────────────────────
+
+  (y / n)
+  ▶ Did you miss any days this pay period?: n
+  ℹ  No missed days — all slots will be filled.
+  (y / n)
+  ▶ Did you work an extra day or days this pay period?: n
+  ℹ  No extra days recorded.
+
+  ══════════════════════════════════════════════════
+  Generating timesheet...
+  ══════════════════════════════════════════════════
+
+  ✔  Saved  →  Evans_Timesheet_19.pdf
+  ℹ  Timesheet is due on 11/16/2026. You will be paid on 12/10/2026.
+  ──────────────────────────────────────────────────
+  Thanks for using Socks, Shawn! 🧦
+  ──────────────────────────────────────────────────
 ```
+
+## CRUD
+```sh
 py -m crud.crud
 ```
 
-CRUD can create, view, update, and delete pay periods and invalid dates. It can also display employee names, EMPLIDs, and weekly schedules, and update an employee's recurring weekday schedule by name or 3-letter abbreviation with one or two work intervals.
+```text
+╔════════════════════════════════════════════╗
+  ║ 🧦  SOCKS CRUD INTERFACE                   ║
+  ║ [b] back  [q] quit here  [exit()] quit all ║
+  ╠════════════════════════════════════════════╣
+  ║   CREATE                                   ║
+  ║   1  New Pay Period                        ║
+  ║   2  New Invalid Date                      ║
+  ║   READ                                     ║
+  ║   3  View Pay Period Schedule              ║
+  ║   4  View Invalid Dates                    ║
+  ║   5  View Employee Names & EMPLIDs         ║
+  ║   6  View Employee Schedules               ║
+  ║   UPDATE                                   ║
+  ║   7  Update Pay Period                     ║
+  ║   8  Update Invalid Date                   ║
+  ║   9  Update Employee Schedule              ║
+  ║   DELETE                                   ║
+  ║  10  Delete Pay Period(s)                  ║
+  ║  11  Delete Invalid Date(s)                ║
+  ╠════════════════════════════════════════════╣
+  ║   m  Show menu                             ║
+  ╚════════════════════════════════════════════╝
+```
+
+## Notes
+- Data is stored in `resources/database/socks.db`. 
+- Employees can have split shifts. Generated PDFs are flattened and include the EMPLID, Prepared by name, checked CA box, and department `885-54`.
+- Timesheets are saved in `timesheets`.
 
 ## Tests
-Run the test suite with:
-```
+```sh
 python -m unittest discover -s tests
 ```
 
 ## Motivation
-Filling out my timesheets manually and remembering pay period dates was tough, so I built this application to simplify the process.
+Filling out timesheets and remembering pay period dates was tough, so I built Socks to make it easier.
