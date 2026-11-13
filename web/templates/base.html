@@ -9,12 +9,12 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="{{ url_for('home') }}"><span class="brand-sock">🧦</span> SOCKS</a>
+    <a class="brand" href="{{ url_for('home') }}">socks</a>
     <nav>
-      <a href="{{ url_for('home') }}" class="{{ 'on' if request.endpoint in ('home', 'timesheet', 'make_timesheet') }}">Timesheet</a>
-      <a href="{{ url_for('employees') }}" class="{{ 'on' if request.endpoint in ('employees', 'new_employee', 'create_employee', 'edit_employee', 'update_employee') }}">Employees</a>
-      <a href="{{ url_for('pay_periods') }}" class="{{ 'on' if request.endpoint in ('pay_periods', 'add_pay_period', 'edit_pay_period', 'update_pay_period') }}">Pay Periods</a>
-      <a href="{{ url_for('days_off') }}" class="{{ 'on' if request.endpoint in ('days_off', 'add_day_off', 'edit_day_off', 'update_day_off') }}">Days Off</a>
+      <a href="{{ url_for('home') }}" class="{{ 'on' if request.endpoint in ('home', 'timesheet', 'make_timesheet') }}">timesheet</a>
+      <a href="{{ url_for('employees') }}" class="{{ 'on' if request.endpoint in ('employees', 'new_employee', 'create_employee', 'edit_employee', 'update_employee') }}">employees</a>
+      <a href="{{ url_for('pay_periods') }}" class="{{ 'on' if request.endpoint in ('pay_periods', 'add_pay_period', 'edit_pay_period', 'update_pay_period') }}">pay periods</a>
+      <a href="{{ url_for('days_off') }}" class="{{ 'on' if request.endpoint in ('days_off', 'add_day_off', 'edit_day_off', 'update_day_off') }}">days off</a>
     </nav>
   </header>
 
@@ -32,6 +32,6 @@
     if (firstProblem) { firstProblem.scrollIntoView({ block: "center" }); }
   </script>
 
-  <footer>Socks · timesheets for Brooklyn College part-timers · runs only on this computer</footer>
+  <footer>socks · timesheets for Brooklyn College part-timers · runs only on this computer</footer>
 </body>
 </html>

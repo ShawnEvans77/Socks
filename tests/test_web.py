@@ -137,14 +137,14 @@ class WebAppTests(unittest.TestCase):
     def test_timesheet_page_shows_schedule_and_holiday(self):
         page = self.client.get("/timesheet?employee=shawn evans&period=1").get_data(as_text=True)
         self.assertIn("1PM – 4PM", page)
-        self.assertIn("DAY OFF / HOLIDAY", page)
+        self.assertIn("Day off / holiday", page)
         self.assertIn("Missed 2:15PM – 3:15PM", page)
-        self.assertIn("MAKE MY TIMESHEET", page)
+        self.assertIn("Make my timesheet", page)
 
     def test_unknown_pay_period_shows_picker_without_form(self):
         page = self.client.get("/timesheet?employee=Shawn+Evans&period=7").get_data(as_text=True)
         self.assertIn("hasn&#39;t been set up", page)
-        self.assertNotIn("MAKE MY TIMESHEET", page)
+        self.assertNotIn("Make my timesheet", page)
 
     # ── Making timesheets ────────────────────────────────────────────────────
 
@@ -414,6 +414,29 @@ class WebAppTests(unittest.TestCase):
     def test_timesheet_files_cannot_escape_their_folder(self):
         self.post_timesheet()
         self.assertEqual(self.client.get("/timesheets/../socks.db").status_code, 404)
+
+    def test_delete_saved_timesheet(self):
+        self.post_timesheet()
+        pdf = self.output / "Evans_Timesheet_1.pdf"
+        self.assertTrue(pdf.exists())
+        self.assertIn("Delete", self.client.get("/").get_data(as_text=True))
+
+        response = self.client.post(
+            "/timesheets/delete", data={"file_name": "Evans_Timesheet_1.pdf"}, follow_redirects=True
+        )
+        self.assertIn("Deleted Evans_Timesheet_1.pdf", response.get_data(as_text=True))
+        self.assertFalse(pdf.exists())
+
+    def test_delete_refuses_names_outside_the_list(self):
+        self.post_timesheet()
+        for bad in ("../socks.db", "missing.pdf", ""):
+            with self.subTest(file_name=bad):
+                response = self.client.post(
+                    "/timesheets/delete", data={"file_name": bad}, follow_redirects=True
+                )
+                self.assertIn("doesn&#39;t exist anymore", response.get_data(as_text=True))
+        self.assertTrue(Path(self.db_path).exists())
+        self.assertTrue((self.output / "Evans_Timesheet_1.pdf").exists())
 
 
 if __name__ == "__main__":

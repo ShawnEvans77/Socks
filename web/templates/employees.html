@@ -2,7 +2,7 @@
 {% block title %}Employees{% endblock %}
 {% block content %}
 <div class="title-row">
-  <h1 class="hero">EMPLOYEES</h1>
+  <h1 class="hero">employees</h1>
   <a class="btn primary" href="{{ url_for('new_employee') }}">+ Add an employee</a>
 </div>
 
@@ -21,7 +21,7 @@
     </div>
     <p>
       <span class="tag">EMPLID {{ employee.emplid or 'not set' }}</span>
-      <span class="tag">DEPT {{ dept_prefix }}-{{ employee.budget }}</span>
+      <span class="tag">Dept {{ dept_prefix }}-{{ employee.budget }}</span>
     </p>
     <div class="week">
       {% for segments in employee.schedule %}

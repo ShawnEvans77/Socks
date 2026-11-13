@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Timesheet{% endblock %}
 {% block content %}
-<h1 class="hero">WHO NEEDS A <span class="mark">TIMESHEET?</span></h1>
+<h1 class="hero">timesheet generator</h1>
 
 {% if current %}
   <p class="lead">Current pay period: <strong class="pill">#{{ current }}</strong> <strong>{{ current_range }}</strong></p>
@@ -17,7 +17,7 @@
       <a class="person" href="{{ url_for('timesheet', employee=employee.name) }}">
         <span class="person-name">{{ employee.name }}</span>
         <span class="person-meta">{% if employee.emplid %}EMPLID {{ employee.emplid }}{% else %}EMPLID needed{% endif %}</span>
-        <span class="person-go">START →</span>
+        <span class="person-go">Start →</span>
       </a>
     {% endfor %}
   </div>
@@ -42,6 +42,10 @@
             <td class="actions">
               <a class="btn small" href="{{ url_for('timesheet_file', file_name=sheet.name, v=sheet.version) }}" target="_blank" rel="noopener">Open</a>
               <a class="btn small" href="{{ url_for('timesheet_file', file_name=sheet.name, download=1) }}">Download</a>
+              <form method="post" action="{{ url_for('delete_timesheet') }}" onsubmit="return confirm('Permanently delete {{ sheet.name }}?')">
+                <input type="hidden" name="file_name" value="{{ sheet.name }}">
+                <button class="btn small danger" type="submit">Delete</button>
+              </form>
             </td>
           </tr>
         {% endfor %}

@@ -1,22 +1,22 @@
 {% extends "base.html" %}
 {% block title %}Timesheet ready{% endblock %}
 {% block content %}
-<h1 class="hero">✔ TIMESHEET <span class="mark">READY!</span></h1>
+<h1 class="hero">✔ timesheet <span class="mark">ready!</span></h1>
 <p class="lead"><strong>{{ employee.name }}</strong> · pay period <strong class="pill">#{{ period }}</strong> <strong>{{ period_range }}</strong></p>
 
 <div class="stats">
-  <div class="stat total"><span class="stat-num">{{ summary.total_text }}</span><span class="stat-label">TOTAL HOURS</span></div>
+  <div class="stat total"><span class="stat-num">{{ summary.total_text }}</span><span class="stat-label">Total hours</span></div>
   {% for text in summary.week_texts %}
-    <div class="stat"><span class="stat-num">{{ text }}</span><span class="stat-label">WEEK {{ loop.index }}</span></div>
+    <div class="stat"><span class="stat-num">{{ text }}</span><span class="stat-label">Week {{ loop.index }}</span></div>
   {% endfor %}
-  <div class="stat"><span class="stat-num small">{{ due_date or 'Not set' }}</span><span class="stat-label">DUE IN PAYROLL</span></div>
-  <div class="stat"><span class="stat-num small">{{ pay_date or 'Not set' }}</span><span class="stat-label">PAY DAY</span></div>
+  <div class="stat"><span class="stat-num small">{{ due_date or 'Not set' }}</span><span class="stat-label">Due in payroll</span></div>
+  <div class="stat"><span class="stat-num small">{{ pay_date or 'Not set' }}</span><span class="stat-label">Pay day</span></div>
 </div>
 
 <div class="go-bar static">
   <span>Saved as <strong>{{ file_name }}</strong> in the <strong>timesheets</strong> folder.</span>
   <span class="actions">
-    <a class="btn primary big" href="{{ url_for('timesheet_file', file_name=file_name, download=1) }}">⬇ DOWNLOAD PDF</a>
+    <a class="btn primary big" href="{{ url_for('timesheet_file', file_name=file_name, download=1) }}">⬇ Download PDF</a>
     <a class="btn big" href="{{ url_for('timesheet_file', file_name=file_name, v=version) }}" target="_blank" rel="noopener">Open in new tab</a>
   </span>
 </div>
@@ -37,7 +37,7 @@
         {% endfor %}
         <tr class="subtotal"><td colspan="2">Week {{ week_number }} total</td><td class="num">{{ summary.week_texts[week_number - 1] }}</td></tr>
       {% endfor %}
-      <tr class="grand"><td colspan="2">TOTAL</td><td class="num">{{ summary.total_text }}</td></tr>
+      <tr class="grand"><td colspan="2">Total</td><td class="num">{{ summary.total_text }}</td></tr>
     </tbody>
   </table>
 </div>

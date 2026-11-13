@@ -66,12 +66,12 @@
           </div>
           <div class="day-plan">
             {% if day.is_holiday %}
-              <span class="tag holiday">DAY OFF / HOLIDAY</span>
+              <span class="tag holiday">Day off / holiday</span>
               {% if day.scheduled %}<span class="muted strike">{{ day.scheduled_text }}</span>{% endif %}
             {% elif day.scheduled %}
               <span class="plan-hours">{{ day.scheduled_text }}</span>
             {% else %}
-              <span class="tag">NOT SCHEDULED</span>
+              <span class="tag">Not scheduled</span>
             {% endif %}
           </div>
           <div class="day-choice">
@@ -116,7 +116,7 @@
 
   <div class="go-bar">
     <span><span class="step">3</span> <strong>Pay period #{{ period }}</strong> <span class="muted">{{ period_range }}</span></span>
-    <button class="btn primary big" type="submit">🧦 MAKE MY TIMESHEET</button>
+    <button class="btn primary big" type="submit">🧦 Make my timesheet</button>
   </div>
 </form>
 {% endif %}

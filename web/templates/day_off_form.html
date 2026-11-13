@@ -2,7 +2,7 @@
 {% block title %}Change day off{% endblock %}
 {% block content %}
 <a class="back" href="{{ url_for('days_off') }}">← Days off</a>
-<h1 class="hero">CHANGE <span class="mark">{{ date }}</span></h1>
+<h1 class="hero">change <span class="mark">{{ date }}</span></h1>
 
 <section class="card {{ 'has-error' if error }}">
   <form method="post" action="{{ url_for('update_day_off') }}" novalidate>
@@ -11,7 +11,7 @@
     {% if error %}<p class="field-error" role="alert">✘ {{ error }}</p>{% endif %}
     <p class="actions">
       <a class="btn" href="{{ url_for('days_off') }}">Cancel</a>
-      <button class="btn primary" type="submit">SAVE CHANGES</button>
+      <button class="btn primary" type="submit">Save changes</button>
     </p>
   </form>
 </section>

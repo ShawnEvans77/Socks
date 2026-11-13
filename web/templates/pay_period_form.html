@@ -2,7 +2,7 @@
 {% block title %}Edit pay period {{ period.pay_period }}{% endblock %}
 {% block content %}
 <a class="back" href="{{ url_for('pay_periods') }}">← Pay periods</a>
-<h1 class="hero">PAY PERIOD <span class="mark">#{{ period.pay_period }}</span></h1>
+<h1 class="hero">pay period <span class="mark">#{{ period.pay_period }}</span></h1>
 
 <section class="card {{ 'has-error' if error }}">
   <p class="muted">Currently {{ period.start_date }} → {{ period.end_date }}. The end date is always 14 days from the start.</p>
@@ -16,7 +16,7 @@
     {% if error %}<p class="field-error" role="alert">✘ {{ error }}</p>{% endif %}
     <p class="actions">
       <a class="btn" href="{{ url_for('pay_periods') }}">Cancel</a>
-      <button class="btn primary" type="submit">SAVE CHANGES</button>
+      <button class="btn primary" type="submit">Save changes</button>
     </p>
   </form>
 </section>

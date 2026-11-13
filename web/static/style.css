@@ -74,8 +74,6 @@ small { font-weight: 600; opacity: 0.75; }
   border-bottom: 4px solid var(--line);
 }
 .brand { font-size: 2rem; letter-spacing: 0.06em; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; }
-.brand-sock { display: inline-block; transition: transform 0.25s; }
-.brand:hover .brand-sock { transform: rotate(-20deg) scale(1.15); }
 .topbar nav { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .topbar nav a {
   padding: 0.35rem 0.9rem; text-decoration: none; font-weight: 800;
@@ -215,7 +213,7 @@ form.inline { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1rem; 
 .day:has(input[value="custom"]:checked) { background: var(--warn-bg); }
 
 .day-date { display: flex; flex-direction: column; line-height: 1.05; }
-.day-name { font-size: 1.7rem; text-transform: uppercase; }
+.day-name { font-size: 1.7rem; }
 .day-num { font-size: 1.05rem; color: var(--muted); }
 .plan-hours { font-size: 1.25rem; font-weight: 800; }
 .day-plan { display: flex; flex-direction: column; gap: 0.25rem; align-items: flex-start; }
@@ -283,7 +281,7 @@ form.inline { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 1rem; 
 }
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 0.6rem 0.9rem; white-space: nowrap; }
-th { background: var(--ink); color: var(--bg); font-size: 0.85rem; letter-spacing: 0.06em; text-transform: uppercase; }
+th { background: var(--ink); color: var(--bg); font-size: 0.85rem; letter-spacing: 0.04em; }
 tbody tr + tr td { border-top: 2px solid color-mix(in srgb, var(--line) 18%, transparent); }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 tr.dim td { color: var(--muted); }

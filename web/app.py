@@ -287,6 +287,27 @@ def create_app(
             as_attachment=request.args.get("download") == "1", max_age=0,
         )
 
+    @app.post("/timesheets/delete")
+    def delete_timesheet():
+        file_name = request.form.get("file_name", "")
+        # Only delete a PDF that is listed directly in the output folder, so a
+        # crafted name can never reach anything outside it.
+        saved = {sheet["name"] for sheet in saved_timesheets()}
+        if file_name not in saved:
+            flash("That timesheet doesn't exist anymore.", "error")
+            return redirect(url_for("home"))
+        try:
+            (app.config["OUTPUT_DIR"] / file_name).unlink()
+        except OSError:
+            flash(
+                f"Couldn't delete {file_name}. If it's open in another program, "
+                "close it and try again.",
+                "error",
+            )
+        else:
+            flash(f"Deleted {file_name}.", "success")
+        return redirect(url_for("home"))
+
     # ── Employees ────────────────────────────────────────────────────────────
 
     def _rows_from_form(form) -> list[list[str]]:

@@ -2,7 +2,7 @@
 {% block title %}{{ 'Edit ' ~ employee.name if employee else 'Add an employee' }}{% endblock %}
 {% block content %}
 <a class="back" href="{{ url_for('employees') }}">← Employees</a>
-<h1 class="hero">{{ employee.name if employee else 'NEW EMPLOYEE' }}</h1>
+<h1 class="hero">{{ employee.name if employee else 'new employee' }}</h1>
 
 {% if errors or day_errors %}<div class="alert error" role="alert">✘ Fix the highlighted problem, then save again.</div>{% endif %}
 
@@ -63,7 +63,7 @@
 
   <div class="go-bar">
     <a class="btn" href="{{ url_for('employees') }}">Cancel</a>
-    <button class="btn primary big" type="submit">{{ 'SAVE CHANGES' if employee else 'ADD EMPLOYEE' }}</button>
+    <button class="btn primary big" type="submit">{{ 'Save changes' if employee else 'Add employee' }}</button>
   </div>
 </form>
 {% endblock %}
