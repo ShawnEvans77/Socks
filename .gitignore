@@ -1,2 +1,9 @@
 **/__pycache__/
 *.pyc
+# Your own data stays on your computer. New copies start from starter.db.
+resources/database/socks.db
+
+# Generated timesheets
+timesheets/
+output/
+tmp/

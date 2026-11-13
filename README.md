@@ -13,6 +13,8 @@ pip install -r requirements.txt
 
 Run every command from the `Socks` folder. Both versions share the same database and the same `timesheets` folder.
 
+The first time you run either version, Socks creates `resources/database/socks.db` from `starter.db`, which comes with the 2026-27 pay periods and days off but no employees. Add yourself on the **employees** tab or with `py -m crud.crud`. Your `socks.db` and your timesheets stay on your computer and are never committed.
+
 ## Run the web app
 ```sh
 py -m web
@@ -56,7 +58,7 @@ These tabs replace the CRUD menu.
 ![Pay periods page](docs/screenshots/pay-periods.png)
 
 #### Pay period backup
-`resources/database/pay_periods_backup.db` holds a copy of the standard pay periods (#4 to #26, 04/05/2026 to 02/20/2027). If pay periods get deleted by accident, the **Backup** card on the pay periods page puts the missing ones back. It never changes pay periods you already have. Deleting a whole year sits at the bottom of the page and asks you to tick a box and confirm first.
+`resources/database/starter.db` holds the standard pay periods (#4 to #26, 04/05/2026 to 02/20/2027). If pay periods get deleted by accident, the **Backup** card on the pay periods page puts the missing ones back. It never changes pay periods you already have. Deleting a whole year sits at the bottom of the page and asks you to tick a box and confirm first.
 
 ## Run the command line app
 ```sh
@@ -188,7 +190,7 @@ py -m crud.crud
 ```
 
 ## Notes
-- Data is stored in `resources/database/socks.db`.
+- Data is stored in `resources/database/socks.db`, which git ignores. Delete it to start over from `starter.db`.
 - The main app asks about schedule changes once. Answering `n` uses the saved schedule without asking about missed or extra days.
 - Answering `y` lets employees record missed days, missed split intervals, and extra workdays.
 - Changes are only for the timesheet being made. They never change the saved schedule.

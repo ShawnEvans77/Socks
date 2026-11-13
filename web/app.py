@@ -29,6 +29,7 @@ from src.utils.database import (
     DatabaseError,
     SocksDatabase,
     ValidationError,
+    create_from_starter,
     parse_budget,
     parse_emplid,
     parse_pay_period,
@@ -49,7 +50,7 @@ def create_app(
     database_path: str | Path | None = None,
     template_pdf: str | Path | None = None,
     output_dir: str | Path | None = None,
-    backup_path: str | Path | None = None,
+    starter_path: str | Path | None = None,
 ) -> Flask:
     app = Flask(__name__)
     app.secret_key = secrets.token_hex(32)
@@ -62,12 +63,14 @@ def create_app(
         or ROOT / filenames.asset_folder / filenames.pdf_input_folder / filenames.starting_pdf
     )
     app.config["OUTPUT_DIR"] = Path(output_dir or ROOT / filenames.output_folder)
-    app.config["BACKUP_DB_PATH"] = Path(
-        backup_path
+    app.config["STARTER_DB_PATH"] = Path(
+        starter_path
         or ROOT / filenames.asset_folder / filenames.database_folder
-        / filenames.pay_period_backup_name
+        / filenames.starter_database_name
     )
 
+    # First run: start from the shipped pay periods and days off.
+    create_from_starter(app.config["DB_PATH"], app.config["STARTER_DB_PATH"])
     SocksDatabase(app.config["DB_PATH"]).ensure_schema()
 
     def get_db() -> SocksDatabase:
@@ -481,8 +484,8 @@ def create_app(
         return [year for year in years if db.count_pay_periods_in_year(year) > 0]
 
     def backup_pay_periods() -> list:
-        """The saved standard pay periods. The app only ever reads this file."""
-        path = app.config["BACKUP_DB_PATH"]
+        """The standard pay periods shipped in the starter database (read only)."""
+        path = app.config["STARTER_DB_PATH"]
         if not path.is_file():  # never let sqlite create an empty one
             return []
         try:

@@ -8,6 +8,7 @@ from src.utils.database import (
     NotFoundError,
     SocksDatabase,
     ValidationError,
+    create_from_starter,
     parse_date,
     parse_pay_period,
     parse_year,
@@ -22,6 +23,37 @@ class DatabaseTestCase(unittest.TestCase):
 
     def tearDown(self):
         self.tmp.cleanup()
+
+    def test_create_from_starter_copies_only_when_missing(self):
+        starter = SocksDatabase(str(Path(self.tmp.name) / "starter.db"))
+        starter.ensure_schema()
+        starter.create_pay_period("1", "04/05/2026", "04/20/2026", "04/30/2026")
+        fresh = Path(self.tmp.name) / "new" / "socks.db"
+
+        self.assertTrue(create_from_starter(fresh, starter.path))
+        self.assertEqual(SocksDatabase(str(fresh)).list_pay_periods(), starter.list_pay_periods())
+
+        # An existing database is never overwritten.
+        self.db.create_pay_period("2", "04/19/2026", "05/04/2026", "05/28/2026")
+        self.assertFalse(create_from_starter(self.path, starter.path))
+        self.assertEqual([p.pay_period for p in self.db.list_pay_periods()], ["2"])
+
+        # A missing starter is not an error, and nothing is created.
+        missing = Path(self.tmp.name) / "other.db"
+        self.assertFalse(create_from_starter(missing, Path(self.tmp.name) / "nope.db"))
+        self.assertFalse(missing.exists())
+
+    def test_shipped_starter_has_calendar_but_no_people(self):
+        shipped = Path(__file__).resolve().parent.parent / "resources" / "database" / "starter.db"
+        con = sqlite3.connect(f"file:{shipped}?mode=ro", uri=True)
+        try:
+            count = lambda table: con.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+            self.assertGreater(count("payroll_schedule"), 0)
+            self.assertGreater(count("days_off"), 0)
+            self.assertEqual(count("employees"), 0)
+            self.assertEqual(count("employee_schedule_segments"), 0)
+        finally:
+            con.close()
 
     def test_date_period_and_year_validation(self):
         self.assertEqual(parse_date("1/2/2026"), "01/02/2026")

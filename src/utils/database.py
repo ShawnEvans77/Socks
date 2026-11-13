@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import datetime as d
 from pathlib import Path
 import re
+import shutil
 import sqlite3
 
 
@@ -48,6 +49,24 @@ class Employee:
 
 def default_database_path() -> str:
     return str(Path(filenames.asset_folder) / filenames.database_folder / filenames.database_name)
+
+
+def starter_database_path() -> str:
+    return str(Path(filenames.asset_folder) / filenames.database_folder / filenames.starter_database_name)
+
+
+def create_from_starter(path: str | Path, starter: str | Path) -> bool:
+    """Copy the shipped starter database to ``path`` if there is no database there yet.
+
+    Returns True when a copy was made. An existing database is never touched.
+    """
+
+    path, starter = Path(path), Path(starter)
+    if path.exists() or not starter.is_file():
+        return False
+    path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(starter, path)
+    return True
 
 
 def parse_date(value: str) -> str:
@@ -172,7 +191,10 @@ class SocksDatabase:
     """Database service for payroll periods, invalid dates, employees, and shifts."""
 
     def __init__(self, path: str | None = None):
-        self.path = path or default_database_path()
+        if not path:
+            path = default_database_path()
+            create_from_starter(path, starter_database_path())
+        self.path = path
 
     def connect(self):
         con = sqlite3.connect(self.path)

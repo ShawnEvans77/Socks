@@ -10,8 +10,9 @@ database_folder = "database"
 # database name
 database_name = "socks.db"
 
-# read-only copy of the standard pay periods, used to restore accidental deletes
-pay_period_backup_name = "pay_periods_backup.db"
+# shipped with the repo: pay periods and days off, no employees.
+# Copied to socks.db on first run, and used to restore deleted pay periods.
+starter_database_name = "starter.db"
 
 # pdf output
 output_folder = "timesheets"

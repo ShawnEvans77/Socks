@@ -103,7 +103,7 @@ class WebAppTests(unittest.TestCase):
         )
 
         # Tests never read the real backup; each one builds its own when needed.
-        self.backup_path = root / "pay_periods_backup.db"
+        self.backup_path = root / "starter.db"
         app = create_app(self.db_path, TEMPLATE_PDF, self.output, self.backup_path)
         app.testing = True
         self.client = app.test_client()
