@@ -7,3 +7,5 @@ resources/database/socks.db
 timesheets/
 output/
 tmp/
+
+CLAUDE.md
