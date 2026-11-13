@@ -48,6 +48,24 @@
   <section class="card center"><p class="lead">No pay periods yet. Add the first one above.</p></section>
 {% endif %}
 
+{% if backup %}
+  <section class="card">
+    <h2>Backup</h2>
+    <p class="muted">
+      A saved copy of the standard pay periods
+      (#{{ backup[0].pay_period }}–#{{ backup[-1].pay_period }}, {{ backup[0].start_date }} → {{ backup[-1].end_date }}).
+      Restoring only puts back the ones that are missing. Pay periods you already have are left alone.
+    </p>
+    {% if backup_missing %}
+      <form method="post" action="{{ url_for('restore_pay_periods') }}">
+        <button class="btn primary" type="submit">↺ Restore {{ backup_missing|length }} missing pay period{{ 's' if backup_missing|length != 1 }}</button>
+      </form>
+    {% else %}
+      <p><span class="tag now-tag">✔ All {{ backup|length }} backed-up pay periods are here</span></p>
+    {% endif %}
+  </section>
+{% endif %}
+
 {% if years %}
   <section class="card danger-zone">
     <h2>Clear out a whole year</h2>
@@ -56,6 +74,7 @@
       <label class="field">Year
         <select name="year">{% for year in years %}<option>{{ year }}</option>{% endfor %}</select>
       </label>
+      <label class="check"><input type="checkbox" name="confirm" value="yes" required> Yes, delete every pay period in that year</label>
       <button class="btn danger" type="submit">Delete that year</button>
     </form>
   </section>

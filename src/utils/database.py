@@ -538,6 +538,33 @@ class SocksDatabase:
             if result.rowcount == 0:
                 raise NotFoundError(f"Pay period {period} does not exist.")
 
+    def restore_pay_periods(self, periods) -> list[PayPeriod]:
+        """Put back any of ``periods`` whose number and start date are both free.
+
+        Pay periods that already exist are left exactly as they are, so a
+        restore only ever adds rows. Returns the pay periods that were added.
+        """
+
+        restored = []
+        with self.connection() as con:
+            cur = con.cursor()
+            for period in periods:
+                if cur.execute(
+                    "SELECT 1 FROM payroll_schedule WHERE pay_period=? OR start_date=?",
+                    (period.pay_period, period.start_date),
+                ).fetchone():
+                    continue
+                cur.execute(
+                    """
+                    INSERT INTO payroll_schedule(pay_period,start_date,end_date,due_date,pay_date)
+                    VALUES(?,?,?,?,?)
+                    """,
+                    (period.pay_period, period.start_date, period.end_date,
+                     period.due_date, period.pay_date),
+                )
+                restored.append(period)
+        return restored
+
     def count_pay_periods_in_year(self, year: str) -> int:
         year = parse_year(year)
 

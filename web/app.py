@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime as dt
 import secrets
+import sqlite3
 import time
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -48,6 +49,7 @@ def create_app(
     database_path: str | Path | None = None,
     template_pdf: str | Path | None = None,
     output_dir: str | Path | None = None,
+    backup_path: str | Path | None = None,
 ) -> Flask:
     app = Flask(__name__)
     app.secret_key = secrets.token_hex(32)
@@ -60,6 +62,11 @@ def create_app(
         or ROOT / filenames.asset_folder / filenames.pdf_input_folder / filenames.starting_pdf
     )
     app.config["OUTPUT_DIR"] = Path(output_dir or ROOT / filenames.output_folder)
+    app.config["BACKUP_DB_PATH"] = Path(
+        backup_path
+        or ROOT / filenames.asset_folder / filenames.database_folder
+        / filenames.pay_period_backup_name
+    )
 
     SocksDatabase(app.config["DB_PATH"]).ensure_schema()
 
@@ -473,8 +480,25 @@ def create_app(
         years = sorted({p.start_date[-4:] for p in periods} | {p.end_date[-4:] for p in periods})
         return [year for year in years if db.count_pay_periods_in_year(year) > 0]
 
+    def backup_pay_periods() -> list:
+        """The saved standard pay periods. The app only ever reads this file."""
+        path = app.config["BACKUP_DB_PATH"]
+        if not path.is_file():  # never let sqlite create an empty one
+            return []
+        try:
+            return SocksDatabase(str(path)).list_pay_periods()
+        except sqlite3.Error:
+            return []
+
     def _render_pay_periods(db, values=None, error="", status=200):
         periods = db.list_pay_periods()
+        backup = backup_pay_periods()
+        # Same rule as SocksDatabase.restore_pay_periods: number and start both free.
+        numbers = {p.pay_period for p in periods}
+        starts = {p.start_date for p in periods}
+        missing = [
+            p for p in backup if p.pay_period not in numbers and p.start_date not in starts
+        ]
         used = {int(period.pay_period) for period in periods}
         next_free = next(
             (n for n in range(_FIRST_PERIOD, _LAST_PERIOD + 1) if n not in used), ""
@@ -484,6 +508,8 @@ def create_app(
             periods=periods,
             current=services.current_pay_period(load_pay_table(db)),
             years=_pay_period_years(db, periods),
+            backup=backup,
+            backup_missing=missing,
             values=values or {"period": str(next_free), "start": "", "due": "", "pay": ""},
             error=error,
         ), status
@@ -565,9 +591,26 @@ def create_app(
             flash(f"Pay period {period} deleted.", "success")
         return redirect(url_for("pay_periods"))
 
+    @app.post("/pay-periods/restore")
+    def restore_pay_periods():
+        backup = backup_pay_periods()
+        if not backup:
+            flash("There's no pay period backup to restore from.", "error")
+            return redirect(url_for("pay_periods"))
+        restored = get_db().restore_pay_periods(backup)
+        if restored:
+            numbers = ", ".join(f"#{p.pay_period}" for p in restored)
+            flash(f"Restored {len(restored)} pay period(s) from the backup: {numbers}.", "success")
+        else:
+            flash("Nothing to restore. Every backed-up pay period is already here.", "success")
+        return redirect(url_for("pay_periods"))
+
     @app.post("/pay-periods/delete-year")
     def delete_pay_period_year():
         db = get_db()
+        if request.form.get("confirm") != "yes":
+            flash("Tick the box to confirm before deleting a whole year.", "error")
+            return redirect(url_for("pay_periods"))
         try:
             year = parse_year(request.form.get("year", ""))
             count = db.delete_pay_periods_in_year(year)

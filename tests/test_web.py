@@ -102,7 +102,9 @@ class WebAppTests(unittest.TestCase):
             54,
         )
 
-        app = create_app(self.db_path, TEMPLATE_PDF, self.output)
+        # Tests never read the real backup; each one builds its own when needed.
+        self.backup_path = root / "pay_periods_backup.db"
+        app = create_app(self.db_path, TEMPLATE_PDF, self.output, self.backup_path)
         app.testing = True
         self.client = app.test_client()
 
@@ -360,12 +362,60 @@ class WebAppTests(unittest.TestCase):
         self.assertIn("<option>2026</option>", page)
         self.assertNotIn("<option>2027</option>", page)
 
+        # Without the confirm box ticked, nothing is deleted.
         response = self.client.post("/pay-periods/delete-year", data={"year": "2026"}, follow_redirects=True)
+        self.assertIn("Tick the box to confirm", response.get_data(as_text=True))
+        self.assertEqual(len(self.db.list_pay_periods()), 2)
+
+        confirmed = {"year": "2026", "confirm": "yes"}
+        response = self.client.post("/pay-periods/delete-year", data=confirmed, follow_redirects=True)
         self.assertIn("Deleted 1 pay period(s) fully inside 2026.", response.get_data(as_text=True))
         self.assertEqual([p.pay_period for p in self.db.list_pay_periods()], ["26"])
 
-        response = self.client.post("/pay-periods/delete-year", data={"year": "2026"}, follow_redirects=True)
+        response = self.client.post("/pay-periods/delete-year", data=confirmed, follow_redirects=True)
         self.assertIn("No pay periods found fully inside 2026.", response.get_data(as_text=True))
+
+    def make_backup(self, *periods):
+        backup = SocksDatabase(str(self.backup_path))
+        backup.ensure_schema()
+        for row in periods:
+            backup.create_pay_period(*row)
+        return backup
+
+    def test_restore_puts_back_only_missing_pay_periods(self):
+        self.make_backup(
+            ("1", "01/01/2026", "01/15/2026", "01/30/2026"),  # different from the live #1
+            ("2", "04/19/2026", "05/04/2026", "05/28/2026"),
+            ("3", "05/03/2026", "05/18/2026", "06/11/2026"),
+        )
+        page = self.client.get("/pay-periods").get_data(as_text=True)
+        self.assertIn("Restore 2 missing pay periods", page)
+
+        response = self.client.post("/pay-periods/restore", follow_redirects=True)
+        self.assertIn("Restored 2 pay period(s) from the backup: #2, #3.", response.get_data(as_text=True))
+        periods = {p.pay_period: p for p in self.db.list_pay_periods()}
+        self.assertEqual(sorted(periods, key=int), ["1", "2", "3"])
+        self.assertEqual(periods["1"].start_date, PERIOD_START)  # existing one untouched
+        self.assertEqual(periods["3"].end_date, "05/16/2026")
+
+        page = self.client.get("/pay-periods").get_data(as_text=True)
+        self.assertIn("All 3 backed-up pay periods are here", page)
+        response = self.client.post("/pay-periods/restore", follow_redirects=True)
+        self.assertIn("Nothing to restore", response.get_data(as_text=True))
+
+    def test_restore_after_deleting_a_whole_year(self):
+        self.make_backup((("1", PERIOD_START, "04/20/2026", "04/30/2026")))
+        self.client.post("/pay-periods/delete-year", data={"year": "2026", "confirm": "yes"})
+        self.assertEqual(self.db.list_pay_periods(), [])
+        self.client.post("/pay-periods/restore")
+        self.assertEqual([p.pay_period for p in self.db.list_pay_periods()], ["1"])
+
+    def test_restore_without_a_backup_file(self):
+        page = self.client.get("/pay-periods").get_data(as_text=True)
+        self.assertNotIn("Restore", page)
+        response = self.client.post("/pay-periods/restore", follow_redirects=True)
+        self.assertIn("no pay period backup", response.get_data(as_text=True))
+        self.assertFalse(self.backup_path.exists())  # it is never created by reading
 
     # ── Days off ─────────────────────────────────────────────────────────────
 
