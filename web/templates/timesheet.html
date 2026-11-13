@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}{{ employee.name }}'s timesheet{% endblock %}
+{% block content %}
+<a class="back" href="{{ url_for('home') }}">← Someone else</a>
+<h1 class="hero">{{ employee.name }}</h1>
+
+<form class="card period-picker" method="get" action="{{ url_for('timesheet') }}">
+  <input type="hidden" name="employee" value="{{ employee.name }}">
+  <span class="step">1</span>
+  <label for="period"><strong>Pay period</strong></label>
+  {% if period_options %}
+    <select id="period" name="period" onchange="this.form.submit()">
+      {% if not period %}<option value="" selected disabled>Pick a pay period…</option>{% endif %}
+      {% for number, range in period_options %}
+        <option value="{{ number }}" {{ 'selected' if number == period }}>#{{ number }} · {{ range }}{{ ' · NOW' if number == current }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn small" type="submit">Show</button>
+  {% else %}
+    <span>None yet. <a href="{{ url_for('pay_periods') }}">Add a pay period</a></span>
+  {% endif %}
+</form>
+
+{% if period_options and not period %}
+  <div class="alert warn">⚠ Today isn't inside any saved pay period. Pick one above.</div>
+{% endif %}
+
+{% if period %}
+<form method="post" action="{{ url_for('make_timesheet') }}" novalidate>
+  <input type="hidden" name="employee" value="{{ employee.name }}">
+  <input type="hidden" name="period" value="{{ period }}">
+
+  {% if problem %}<div class="alert error" role="alert">✘ {{ problem }}</div>{% endif %}
+
+  {% if not employee.emplid %}
+    <section class="card {{ 'has-error' if emplid_error }}">
+      <h2>EMPLID needed</h2>
+      <p>{{ employee.name }} needs an EMPLID before a timesheet can be made. It gets saved for next time.</p>
+      <label class="field">EMPLID
+        <input type="text" name="emplid" inputmode="numeric" autocomplete="off" value="{{ emplid_value or '' }}" placeholder="Digits only">
+      </label>
+      {% if emplid_error %}<p class="field-error" role="alert">✘ {{ emplid_error }}</p>{% endif %}
+    </section>
+  {% endif %}
+
+  <div class="step-line"><span class="step">2</span> <strong>Anything different this pay period?</strong> <span class="muted">Leave it alone if you worked your normal schedule.</span></div>
+
+  {% for week in weeks %}
+    <h2 class="section-title">Week {{ loop.index }} <span class="muted">{{ week[0].date_text }} – {{ week[-1].date_text }}</span></h2>
+    <div class="days">
+      {% for day in week %}
+        <fieldset class="day {{ 'works' if day.works_by_default else 'rest' }} {{ 'has-error' if day.error }}">
+          <legend class="sr-only">{{ day.weekday }} {{ day.date_text }}</legend>
+          <div class="day-date">
+            <span class="day-name">{{ day.weekday[:3] }}</span>
+            <span class="day-num">{{ day.date_text }}</span>
+          </div>
+          <div class="day-plan">
+            {% if day.is_holiday %}
+              <span class="tag holiday">DAY OFF / HOLIDAY</span>
+              {% if day.scheduled %}<span class="muted strike">{{ day.scheduled_text }}</span>{% endif %}
+            {% elif day.scheduled %}
+              <span class="plan-hours">{{ day.scheduled_text }}</span>
+            {% else %}
+              <span class="tag">NOT SCHEDULED</span>
+            {% endif %}
+          </div>
+          <div class="day-choice">
+            <div class="picks">
+              <label class="pick"><input type="radio" name="mode_{{ day.index }}" value="normal" {{ 'checked' if day.mode == 'normal' }}><span>{{ 'Worked it' if day.works_by_default else 'Off' }}</span></label>
+              {% if day.works_by_default %}
+                <label class="pick miss"><input type="radio" name="mode_{{ day.index }}" value="missed" {{ 'checked' if day.mode == 'missed' }}><span>Missed it</span></label>
+              {% endif %}
+              <label class="pick other"><input type="radio" name="mode_{{ day.index }}" value="custom" {{ 'checked' if day.mode == 'custom' }}><span>{{ 'Different hours' if day.works_by_default else 'I worked' }}</span></label>
+            </div>
+
+            {% if day.is_split and day.works_by_default %}
+              <div class="skips">
+                {% for start, end in day.scheduled %}
+                  <label class="check"><input type="checkbox" name="skip_{{ day.index }}_{{ loop.index0 }}" value="1" {{ 'checked' if loop.index0 in day.skipped }}> Missed {{ start }} – {{ end }}</label>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            <div class="custom">
+              <div class="intervals">
+                <div class="interval">
+                  <span class="interval-name">Shift 1</span>
+                  <label>From <input type="time" name="start1_{{ day.index }}" value="{{ day.custom[0] }}"></label>
+                  <label>to <input type="time" name="end1_{{ day.index }}" value="{{ day.custom[1] }}"></label>
+                </div>
+                <div class="interval">
+                  <span class="interval-name">Shift 2 <small>optional</small></span>
+                  <label>From <input type="time" name="start2_{{ day.index }}" value="{{ day.custom[2] }}"></label>
+                  <label>to <input type="time" name="end2_{{ day.index }}" value="{{ day.custom[3] }}"></label>
+                </div>
+              </div>
+            </div>
+
+            {% if day.error %}<p class="field-error" role="alert">✘ {{ day.error }}</p>{% endif %}
+          </div>
+        </fieldset>
+      {% endfor %}
+    </div>
+  {% endfor %}
+
+  <div class="go-bar">
+    <span><span class="step">3</span> <strong>Pay period #{{ period }}</strong> <span class="muted">{{ period_range }}</span></span>
+    <button class="btn primary big" type="submit">🧦 MAKE MY TIMESHEET</button>
+  </div>
+</form>
+{% endif %}
+{% endblock %}

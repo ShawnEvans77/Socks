@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Edit pay period {{ period.pay_period }}{% endblock %}
+{% block content %}
+<a class="back" href="{{ url_for('pay_periods') }}">← Pay periods</a>
+<h1 class="hero">PAY PERIOD <span class="mark">#{{ period.pay_period }}</span></h1>
+
+<section class="card {{ 'has-error' if error }}">
+  <p class="muted">Currently {{ period.start_date }} → {{ period.end_date }}. The end date is always 14 days from the start.</p>
+  <form method="post" action="{{ url_for('update_pay_period') }}" novalidate>
+    <input type="hidden" name="period" value="{{ period.pay_period }}">
+    <div class="fields">
+      <label class="field">Start date <input type="date" name="start" value="{{ values.start }}"></label>
+      <label class="field">Timesheet due <input type="date" name="due" value="{{ values.due }}"></label>
+      <label class="field">Pay date <input type="date" name="pay" value="{{ values.pay }}"></label>
+    </div>
+    {% if error %}<p class="field-error" role="alert">✘ {{ error }}</p>{% endif %}
+    <p class="actions">
+      <a class="btn" href="{{ url_for('pay_periods') }}">Cancel</a>
+      <button class="btn primary" type="submit">SAVE CHANGES</button>
+    </p>
+  </form>
+</section>
+{% endblock %}

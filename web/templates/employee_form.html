@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit ' ~ employee.name if employee else 'Add an employee' }}{% endblock %}
+{% block content %}
+<a class="back" href="{{ url_for('employees') }}">← Employees</a>
+<h1 class="hero">{{ employee.name if employee else 'NEW EMPLOYEE' }}</h1>
+
+{% if errors or day_errors %}<div class="alert error" role="alert">✘ Fix the highlighted problem, then save again.</div>{% endif %}
+
+<form method="post" action="{{ url_for('update_employee') if employee else url_for('create_employee') }}" novalidate>
+  {% if employee %}<input type="hidden" name="name" value="{{ employee.name }}">{% endif %}
+
+  <section class="card">
+    <h2>Details</h2>
+    <div class="fields">
+      {% if not employee %}
+        <label class="field {{ 'has-error' if errors.name }}">First name
+          <input type="text" name="first" value="{{ values.first }}" autocomplete="off" autofocus>
+        </label>
+        <label class="field {{ 'has-error' if errors.name }}">Last name
+          <input type="text" name="last" value="{{ values.last }}" autocomplete="off">
+        </label>
+      {% endif %}
+      <label class="field {{ 'has-error' if errors.emplid }}">EMPLID
+        <input type="text" name="emplid" inputmode="numeric" value="{{ values.emplid }}" autocomplete="off" placeholder="Digits only">
+      </label>
+      <label class="field {{ 'has-error' if errors.budget }}">Department budget
+        <span class="prefixed"><span class="prefix">{{ dept_prefix }}-</span><input type="text" name="budget" inputmode="numeric" value="{{ values.budget }}" autocomplete="off"></span>
+      </label>
+    </div>
+    {% for key in ('name', 'emplid', 'budget') %}
+      {% if errors[key] %}<p class="field-error" role="alert">✘ {{ errors[key] }}</p>{% endif %}
+    {% endfor %}
+  </section>
+
+  <section class="card">
+    <h2>Weekly schedule</h2>
+    <p class="muted">Leave a day blank if they're off. Use Shift 2 only for a split day.</p>
+    <div class="days">
+      {% for row in rows %}
+        {% set weekday = loop.index0 %}
+        <fieldset class="day sched {{ 'has-error' if day_errors[weekday] }}">
+          <legend class="sr-only">{{ weekdays[weekday] }}</legend>
+          <div class="day-date"><span class="day-name">{{ weekdays[weekday][:3] }}</span></div>
+          <div class="day-choice">
+            <div class="intervals">
+              <div class="interval">
+                <span class="interval-name">Shift 1</span>
+                <label>From <input type="time" name="d{{ weekday }}_s1" value="{{ row[0] }}"></label>
+                <label>to <input type="time" name="d{{ weekday }}_e1" value="{{ row[1] }}"></label>
+              </div>
+              <div class="interval">
+                <span class="interval-name">Shift 2 <small>optional</small></span>
+                <label>From <input type="time" name="d{{ weekday }}_s2" value="{{ row[2] }}"></label>
+                <label>to <input type="time" name="d{{ weekday }}_e2" value="{{ row[3] }}"></label>
+              </div>
+            </div>
+            {% if day_errors[weekday] %}<p class="field-error" role="alert">✘ {{ day_errors[weekday] }}</p>{% endif %}
+          </div>
+        </fieldset>
+      {% endfor %}
+    </div>
+  </section>
+
+  <div class="go-bar">
+    <a class="btn" href="{{ url_for('employees') }}">Cancel</a>
+    <button class="btn primary big" type="submit">{{ 'SAVE CHANGES' if employee else 'ADD EMPLOYEE' }}</button>
+  </div>
+</form>
+{% endblock %}

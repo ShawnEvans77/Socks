@@ -7,9 +7,10 @@ from ..utils.database import DATE_FORMAT, SocksDatabase, parse_existing_date
 class PayTable:
     """In-memory view of payroll periods and invalid dates."""
 
-    def __init__(self, database: SocksDatabase | None = None):
+    def __init__(self, database: SocksDatabase | None = None, ensure_schema: bool = True):
         self.db = database or SocksDatabase()
-        self.db.ensure_schema()
+        if ensure_schema:
+            self.db.ensure_schema()
 
         periods = self.db.list_pay_periods()
         self.pay_dict = {

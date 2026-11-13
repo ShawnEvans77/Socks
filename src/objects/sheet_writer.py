@@ -10,8 +10,10 @@ class SheetWriter:
 
     def __init__(
         self, input_file_name: str, last_name: str, first_name: str,
-        pay_period: int, emplid: str
+        pay_period: int, emplid: str, pay_table=None, schedule_table=None
     ):
+        self.pay_table = pay_table or guide.Tables.pay_table.value
+        self.schedule_table = schedule_table or guide.Tables.schedule_table.value
         self.writer = PdfWriter(input_file_name)
         self.page = self.writer.pages[0]
         self.last_name = last_name
@@ -22,7 +24,7 @@ class SheetWriter:
         self.split_shift_cells = []
         if not self.emplid or not (self.emplid.isascii() and self.emplid.isdigit()):
             raise ValueError("EMPLID is required and must contain digits only.")
-        self.dates = guide.Tables.pay_table.value.get_period_dates(self.pay_period)
+        self.dates = self.pay_table.get_period_dates(self.pay_period)
 
     def write_timesheet(self):
         '''Writes all needed information on the timesheet.'''
@@ -186,7 +188,7 @@ class SheetWriter:
 
     def write_pay_period(self):
         """Write the pay period and its date range."""
-        pay_table = guide.Tables.pay_table.value
+        pay_table = self.pay_table
         pay_period_field = SheetWriter.txt_field(
             guide.Indices.pay_period_index.value
         )
@@ -210,7 +212,7 @@ class SheetWriter:
 
     def write_department_number(self):
         """Write the department number."""
-        budget = guide.Tables.schedule_table.value.get_budget(self.name)
+        budget = self.schedule_table.get_budget(self.name)
         department_number = f"{guide.LearningCenter.lc_dept_prefix.value}-{budget}"
         self._write_guide_field(
             guide.Indices.dept_num_index.value, department_number
@@ -230,13 +232,13 @@ class SheetWriter:
 
         for day, day_index in enumerate(guide.Indices.date_indices.value):
             date_field = SheetWriter.txt_field(day_index)
-            date_string = guide.Tables.pay_table.value.date_str(self.dates[day])
+            date_string = self.pay_table.date_str(self.dates[day])
             self.update_field(date_field, date_string)
 
     def write_hours(self):
-        schedule_table = guide.Tables.schedule_table.value
+        schedule_table = self.schedule_table
         schedule = schedule_table.get(self.name)
-        invalid_dates = set(guide.Tables.pay_table.value.get_invalid_dates())
+        invalid_dates = set(self.pay_table.get_invalid_dates())
         missed_days = schedule_table.get_missed_days(self.name)
         missed_split_shifts = schedule_table.get_missed_split_shifts(self.name)
         extra_days = schedule_table.get_extra_days(self.name)
@@ -395,3 +397,10 @@ class SheetWriter:
         '''Creates a file with the timesheet stored in PDF form.'''
 
         self.writer.write(f"{filenames.output_folder}/{output_file_name}")
+
+    def to_bytes(self) -> bytes:
+        """Return the finished timesheet PDF as bytes."""
+
+        buffer = BytesIO()
+        self.writer.write(buffer)
+        return buffer.getvalue()

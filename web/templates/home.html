@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Timesheet{% endblock %}
+{% block content %}
+<h1 class="hero">WHO NEEDS A <span class="mark">TIMESHEET?</span></h1>
+
+{% if current %}
+  <p class="lead">Current pay period: <strong class="pill">#{{ current }}</strong> <strong>{{ current_range }}</strong></p>
+{% elif has_periods %}
+  <div class="alert warn">⚠ Today isn't inside any saved pay period. You can still pick one on the next screen.</div>
+{% else %}
+  <div class="alert warn">⚠ No pay periods are set up yet. <a href="{{ url_for('pay_periods') }}">Add a pay period</a> first.</div>
+{% endif %}
+
+{% if employees %}
+  <div class="people">
+    {% for employee in employees %}
+      <a class="person" href="{{ url_for('timesheet', employee=employee.name) }}">
+        <span class="person-name">{{ employee.name }}</span>
+        <span class="person-meta">{% if employee.emplid %}EMPLID {{ employee.emplid }}{% else %}EMPLID needed{% endif %}</span>
+        <span class="person-go">START →</span>
+      </a>
+    {% endfor %}
+  </div>
+{% else %}
+  <section class="card center">
+    <h2>No employees yet</h2>
+    <p class="lead">Add someone and their weekly schedule to get started.</p>
+    <a class="btn primary" href="{{ url_for('new_employee') }}">+ Add an employee</a>
+  </section>
+{% endif %}
+
+{% if timesheets %}
+  <h2 class="section-title">Saved timesheets</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>File</th><th>Saved</th><th></th></tr></thead>
+      <tbody>
+        {% for sheet in timesheets %}
+          <tr>
+            <td><strong>{{ sheet.name }}</strong></td>
+            <td>{{ sheet.saved }}</td>
+            <td class="actions">
+              <a class="btn small" href="{{ url_for('timesheet_file', file_name=sheet.name, v=sheet.version) }}" target="_blank" rel="noopener">Open</a>
+              <a class="btn small" href="{{ url_for('timesheet_file', file_name=sheet.name, download=1) }}">Download</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endif %}
+{% endblock %}

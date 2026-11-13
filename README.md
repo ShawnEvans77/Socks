@@ -9,7 +9,19 @@ cd Socks
 pip install -r requirements.txt
 ```
 
-## Run
+## Run the web app
+```sh
+py -m web
+```
+Your browser opens to http://127.0.0.1:5050/. Pick an employee, mark anything
+that was different this pay period, and press **MAKE MY TIMESHEET**. The
+Employees, Pay Periods, and Days Off tabs replace the CRUD menu.
+
+- Press `Ctrl+C` in the terminal to stop it.
+- `py -m web --port 5051` uses a different port; `--no-browser` skips opening the browser.
+- It only listens on this computer, and uses the same database and `timesheets/` folder as the command line app.
+
+## Run the command line app
 ```sh
 py -m app.main
 ```

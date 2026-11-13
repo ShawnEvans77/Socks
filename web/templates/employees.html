@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Employees{% endblock %}
+{% block content %}
+<div class="title-row">
+  <h1 class="hero">EMPLOYEES</h1>
+  <a class="btn primary" href="{{ url_for('new_employee') }}">+ Add an employee</a>
+</div>
+
+{% if not employees %}
+  <section class="card center"><p class="lead">Nobody here yet.</p></section>
+{% endif %}
+
+{% for employee in employees %}
+  <section class="card">
+    <div class="title-row">
+      <h2>{{ employee.name }}</h2>
+      <span class="actions">
+        <a class="btn small" href="{{ url_for('edit_employee', name=employee.name) }}">Edit</a>
+        <a class="btn small primary" href="{{ url_for('timesheet', employee=employee.name) }}">Timesheet →</a>
+      </span>
+    </div>
+    <p>
+      <span class="tag">EMPLID {{ employee.emplid or 'not set' }}</span>
+      <span class="tag">DEPT {{ dept_prefix }}-{{ employee.budget }}</span>
+    </p>
+    <div class="week">
+      {% for segments in employee.schedule %}
+        <div class="week-day {{ 'works' if segments else 'rest' }}">
+          <span class="day-name">{{ weekdays[loop.index0][:3] }}</span>
+          {% if segments %}
+            {% for start, end in segments %}<span class="week-shift">{{ start }} – {{ end }}</span>{% endfor %}
+          {% else %}
+            <span class="muted">Off</span>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+{% endfor %}
+{% endblock %}

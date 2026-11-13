@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Socks{% endblock %} · Socks</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧦</text></svg>">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('home') }}"><span class="brand-sock">🧦</span> SOCKS</a>
+    <nav>
+      <a href="{{ url_for('home') }}" class="{{ 'on' if request.endpoint in ('home', 'timesheet', 'make_timesheet') }}">Timesheet</a>
+      <a href="{{ url_for('employees') }}" class="{{ 'on' if request.endpoint in ('employees', 'new_employee', 'create_employee', 'edit_employee', 'update_employee') }}">Employees</a>
+      <a href="{{ url_for('pay_periods') }}" class="{{ 'on' if request.endpoint in ('pay_periods', 'add_pay_period', 'edit_pay_period', 'update_pay_period') }}">Pay Periods</a>
+      <a href="{{ url_for('days_off') }}" class="{{ 'on' if request.endpoint in ('days_off', 'add_day_off', 'edit_day_off', 'update_day_off') }}">Days Off</a>
+    </nav>
+  </header>
+
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert {{ category }}" role="status">{{ '✔' if category == 'success' else '✘' }} {{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <script>
+    var firstProblem = document.querySelector(".day.has-error, .card.has-error, .field.has-error");
+    if (firstProblem) { firstProblem.scrollIntoView({ block: "center" }); }
+  </script>
+
+  <footer>Socks · timesheets for Brooklyn College part-timers · runs only on this computer</footer>
+</body>
+</html>

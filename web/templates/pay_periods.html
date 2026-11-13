@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Pay periods{% endblock %}
+{% block content %}
+<h1 class="hero">PAY PERIODS</h1>
+
+<section class="card {{ 'has-error' if error }}">
+  <h2>Add a pay period</h2>
+  <p class="muted">The end date is filled in for you: 14 days from the start.</p>
+  <form method="post" action="{{ url_for('add_pay_period') }}" novalidate>
+    <div class="fields">
+      <label class="field">Number ({{ first_period }}–{{ last_period }})
+        <input type="number" name="period" min="{{ first_period }}" max="{{ last_period }}" value="{{ values.period }}">
+      </label>
+      <label class="field">Start date <input type="date" name="start" value="{{ values.start }}"></label>
+      <label class="field">Timesheet due <input type="date" name="due" value="{{ values.due }}"></label>
+      <label class="field">Pay date <input type="date" name="pay" value="{{ values.pay }}"></label>
+    </div>
+    {% if error %}<p class="field-error" role="alert">✘ {{ error }}</p>{% endif %}
+    <button class="btn primary" type="submit">+ Add pay period</button>
+  </form>
+</section>
+
+{% if periods %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Start</th><th>End</th><th>Due</th><th>Pay day</th><th></th></tr></thead>
+      <tbody>
+        {% for period in periods %}
+          <tr class="{{ 'now' if period.pay_period|int == current }}">
+            <td><strong class="pill">{{ period.pay_period }}</strong>{% if period.pay_period|int == current %} <span class="tag now-tag">NOW</span>{% endif %}</td>
+            <td>{{ period.start_date }}</td>
+            <td>{{ period.end_date }}</td>
+            <td>{{ period.due_date or '—' }}</td>
+            <td>{{ period.pay_date or '—' }}</td>
+            <td class="actions">
+              <a class="btn small" href="{{ url_for('edit_pay_period', period=period.pay_period) }}">Edit</a>
+              <form method="post" action="{{ url_for('delete_pay_period') }}" onsubmit="return confirm('Permanently delete pay period {{ period.pay_period }}?')">
+                <input type="hidden" name="period" value="{{ period.pay_period }}">
+                <button class="btn small danger" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <section class="card center"><p class="lead">No pay periods yet. Add the first one above.</p></section>
+{% endif %}
+
+{% if years %}
+  <section class="card danger-zone">
+    <h2>Clear out a whole year</h2>
+    <p class="muted">Deletes every pay period that starts and ends inside that year.</p>
+    <form class="inline" method="post" action="{{ url_for('delete_pay_period_year') }}" onsubmit="return confirm('Permanently delete every pay period fully inside ' + this.year.value + '?')">
+      <label class="field">Year
+        <select name="year">{% for year in years %}<option>{{ year }}</option>{% endfor %}</select>
+      </label>
+      <button class="btn danger" type="submit">Delete that year</button>
+    </form>
+  </section>
+{% endif %}
+{% endblock %}

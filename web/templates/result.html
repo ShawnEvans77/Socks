@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Timesheet ready{% endblock %}
+{% block content %}
+<h1 class="hero">✔ TIMESHEET <span class="mark">READY!</span></h1>
+<p class="lead"><strong>{{ employee.name }}</strong> · pay period <strong class="pill">#{{ period }}</strong> <strong>{{ period_range }}</strong></p>
+
+<div class="stats">
+  <div class="stat total"><span class="stat-num">{{ summary.total_text }}</span><span class="stat-label">TOTAL HOURS</span></div>
+  {% for text in summary.week_texts %}
+    <div class="stat"><span class="stat-num">{{ text }}</span><span class="stat-label">WEEK {{ loop.index }}</span></div>
+  {% endfor %}
+  <div class="stat"><span class="stat-num small">{{ due_date or 'Not set' }}</span><span class="stat-label">DUE IN PAYROLL</span></div>
+  <div class="stat"><span class="stat-num small">{{ pay_date or 'Not set' }}</span><span class="stat-label">PAY DAY</span></div>
+</div>
+
+<div class="go-bar static">
+  <span>Saved as <strong>{{ file_name }}</strong> in the <strong>timesheets</strong> folder.</span>
+  <span class="actions">
+    <a class="btn primary big" href="{{ url_for('timesheet_file', file_name=file_name, download=1) }}">⬇ DOWNLOAD PDF</a>
+    <a class="btn big" href="{{ url_for('timesheet_file', file_name=file_name, v=version) }}" target="_blank" rel="noopener">Open in new tab</a>
+  </span>
+</div>
+
+<h2 class="section-title">What went on the timesheet</h2>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Day</th><th>Time worked</th><th class="num">Hours</th></tr></thead>
+    <tbody>
+      {% for week in weeks %}
+        {% set week_number = loop.index %}
+        {% for day in week %}
+          <tr class="{{ '' if day.worked else 'dim' }}">
+            <td><strong>{{ day.weekday[:3] }} {{ day.date_text }}</strong></td>
+            <td>{% if day.worked %}{{ day.worked_text }}{% elif day.mode == 'missed' %}Missed{% elif day.is_holiday %}Day off / holiday{% else %}—{% endif %}</td>
+            <td class="num">{{ day.hours_text if day.worked else '' }}</td>
+          </tr>
+        {% endfor %}
+        <tr class="subtotal"><td colspan="2">Week {{ week_number }} total</td><td class="num">{{ summary.week_texts[week_number - 1] }}</td></tr>
+      {% endfor %}
+      <tr class="grand"><td colspan="2">TOTAL</td><td class="num">{{ summary.total_text }}</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2 class="section-title">Preview</h2>
+<iframe class="pdf" title="Timesheet preview" src="{{ url_for('timesheet_file', file_name=file_name, v=version) }}"></iframe>
+
+<p class="actions end">
+  <a class="btn" href="{{ url_for('timesheet', employee=employee.name, period=period) }}">← Redo this one</a>
+  <a class="btn" href="{{ url_for('home') }}">Make another</a>
+</p>
+{% endblock %}

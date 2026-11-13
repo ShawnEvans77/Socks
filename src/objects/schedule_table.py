@@ -6,8 +6,8 @@ from ..utils.database import SocksDatabase, normalize_shift_segments
 class ScheduleTable:
     """Loads employee schedules and EMPLIDs from the Socks database."""
 
-    def __init__(self):
-        self.db = SocksDatabase()
+    def __init__(self, database: SocksDatabase | None = None, ensure_schema: bool = True):
+        self.db = database or SocksDatabase()
         self.schedule_dict = {}
         self.emplid_dict = {}
         self.budget_dict = {}
@@ -15,7 +15,8 @@ class ScheduleTable:
         self.missed_split_shifts_dict = {}
         self.extra_days_dict = {}
 
-        self.db.ensure_schema()
+        if ensure_schema:
+            self.db.ensure_schema()
         for employee in self.db.list_employees():
             self._cache_employee(employee)
 
