@@ -181,6 +181,11 @@ class Day:
         return bool(self.scheduled) and not self.is_holiday
 
     @property
+    def changed(self) -> bool:
+        """True when this day differs from the saved schedule (or has an error)."""
+        return self.mode != "normal" or bool(self.skipped) or bool(self.error)
+
+    @property
     def scheduled_text(self) -> str:
         return format_shifts(self.scheduled)
 
@@ -234,6 +239,10 @@ def apply_form(days: list[Day], form) -> tuple[Changes, bool]:
 
     changes = Changes()
     ok = True
+
+    if form.get("changes") == "none":
+        # "Normal schedule" was picked: ignore any per-day edits hidden behind it.
+        return changes, ok
 
     for day in days:
         i = day.index

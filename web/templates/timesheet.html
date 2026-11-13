@@ -43,8 +43,17 @@
     </section>
   {% endif %}
 
-  <div class="step-line"><span class="step">2</span> <strong>Anything different this pay period?</strong> <span class="muted">Leave it alone if you worked your normal schedule.</span></div>
+  {% set changed = days | selectattr('changed') | list %}
+  <fieldset class="step-line changes-toggle">
+    <legend class="sr-only">Anything different this pay period?</legend>
+    <span class="step">2</span> <strong>Anything different this pay period?</strong>
+    <span class="picks">
+      <label class="pick"><input type="radio" name="changes" value="none" {{ 'checked' if not changed }}><span>Nope, normal schedule</span></label>
+      <label class="pick other"><input type="radio" name="changes" value="some" {{ 'checked' if changed }}><span>Yes, something changed</span></label>
+    </span>
+  </fieldset>
 
+  <div class="week-list">
   {% for week in weeks %}
     <h2 class="section-title">Week {{ loop.index }} <span class="muted">{{ week[0].date_text }} – {{ week[-1].date_text }}</span></h2>
     <div class="days">
@@ -103,6 +112,7 @@
       {% endfor %}
     </div>
   {% endfor %}
+  </div>
 
   <div class="go-bar">
     <span><span class="step">3</span> <strong>Pay period #{{ period }}</strong> <span class="muted">{{ period_range }}</span></span>

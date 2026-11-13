@@ -226,6 +226,21 @@ class WebAppTests(unittest.TestCase):
         saved = services.find_employee(self.db.list_employees(), "ada lovelace")
         self.assertEqual(saved.emplid, "11112222")
 
+    def test_changes_toggle_defaults_and_hides_day_edits(self):
+        page = self.client.get("/timesheet?employee=Shawn+Evans&period=1").get_data(as_text=True)
+        self.assertIn('name="changes" value="none" checked', page)
+
+        # Edits left behind a "normal schedule" answer are ignored.
+        response = self.post_timesheet(changes="none", mode_1="missed", skip_4_1="1")
+        self.assertIn('<span class="stat-num">15</span>', response.get_data(as_text=True))
+
+        response = self.post_timesheet(changes="some", mode_1="missed")
+        self.assertIn('<span class="stat-num">12</span>', response.get_data(as_text=True))
+
+        # A failed submit reopens the day editor so the error is visible.
+        page = self.post_timesheet(changes="some", mode_2="custom").get_data(as_text=True)
+        self.assertIn('name="changes" value="some" checked', page)
+
     def test_requests_do_not_share_missed_days(self):
         self.post_timesheet(mode_1="missed")
         page = self.post_timesheet().get_data(as_text=True)
