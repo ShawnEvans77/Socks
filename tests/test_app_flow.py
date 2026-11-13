@@ -196,7 +196,7 @@ class AppFlowTests(unittest.TestCase):
         pay_table = FakePayTable(due="11/16/2026", pay="12/10/2026")
         output = StringIO()
         with use_guide_tables(pay_table=pay_table), \
-             patch.object(app_main, "_banner"), \
+             patch.object(app_main.console, "banner"), \
              patch.object(app_main, "_step_employee", return_value=("shawn", "evans", "90000001")), \
              patch.object(app_main, "_step_pay_period", return_value=19), \
              patch.object(app_main, "_step_work_days"), \

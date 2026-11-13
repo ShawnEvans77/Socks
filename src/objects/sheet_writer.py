@@ -3,6 +3,7 @@ from ..constants.schedule import DAYS_PER_WEEK, weekday_index
 from ..objects import clock
 from ..utils.database import normalize_shift_segments
 from io import BytesIO
+from pathlib import Path
 from pypdf import PdfReader, PdfWriter
 
 class SheetWriter:
@@ -396,7 +397,9 @@ class SheetWriter:
     def output_timesheet(self, output_file_name: str):
         '''Creates a file with the timesheet stored in PDF form.'''
 
-        self.writer.write(f"{filenames.output_folder}/{output_file_name}")
+        output_folder = Path(filenames.output_folder)
+        output_folder.mkdir(parents=True, exist_ok=True)
+        self.writer.write(output_folder / output_file_name)
 
     def to_bytes(self) -> bytes:
         """Return the finished timesheet PDF as bytes."""

@@ -42,6 +42,16 @@ class PdfFeatureTests(unittest.TestCase):
             )
         self.assertEqual(str(checkbox.get("/V")), "/1")
 
+    def test_output_creates_missing_timesheets_folder(self):
+        missing = Path(self.tmp.name) / "not-made-yet"
+        with use_guide_tables(FakePayTable(), FakeScheduleTable(schedule=weekly_schedule())), \
+             patch.object(filenames, "output_folder", str(missing)):
+            sheet = self.make_writer()
+            sheet.write_timesheet()
+            sheet.output_timesheet("Evans_Timesheet_1.pdf")
+
+        self.assertTrue((missing / "Evans_Timesheet_1.pdf").read_bytes().startswith(b"%PDF"))
+
     def test_split_shift_pdf_has_visible_labels_and_is_not_editable(self):
         schedule = weekly_schedule()
         schedule[4] = [("12PM", "2PM"), ("2:15PM", "3:15PM")]

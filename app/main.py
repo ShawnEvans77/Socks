@@ -16,10 +16,6 @@ _yn = console.yes_no
 _TOTAL_STEPS = 3
 
 
-def _banner() -> None:
-    console.banner()
-
-
 def _step_employee() -> tuple[str, str, str]:
     console.section(1, _TOTAL_STEPS, "Employee")
 
@@ -80,7 +76,7 @@ def _step_pay_period() -> int:
     last_period = guide.PeriodLength.last_period.value
     while True:
         raw = _prompt("Pay period", hint=f"{first_period} – {last_period}")
-        if not raw.isnumeric():
+        if not (raw.isascii() and raw.isdigit()):
             console.warn("Pay period must be a number.")
             continue
         if not first_period <= int(raw) <= last_period:
@@ -128,7 +124,7 @@ def _detect_pay_period() -> int | None:
 
 
 def main() -> None:
-    _banner()
+    console.banner()
     step = 1
     first = last = None
     emplid = ""

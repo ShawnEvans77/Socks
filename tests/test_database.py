@@ -33,6 +33,8 @@ class DatabaseTestCase(unittest.TestCase):
         with self.assertRaises(ValidationError):
             parse_pay_period("27")
         with self.assertRaises(ValidationError):
+            parse_pay_period("²")  # isnumeric() but not a valid int()
+        with self.assertRaises(ValidationError):
             parse_year("1899")
 
     def test_schema_dedupes_and_adds_unique_constraints(self):

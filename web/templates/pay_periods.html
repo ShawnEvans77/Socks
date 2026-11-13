@@ -27,7 +27,7 @@
       <tbody>
         {% for period in periods %}
           <tr class="{{ 'now' if period.pay_period|int == current }}">
-            <td><strong class="pill">{{ period.pay_period }}</strong>{% if period.pay_period|int == current %} <span class="tag now-tag">NOW</span>{% endif %}</td>
+            <td><strong class="pill">{{ period.pay_period }}</strong>{% if period.pay_period|int == current %} <span class="tag now-tag">now</span>{% endif %}</td>
             <td>{{ period.start_date }}</td>
             <td>{{ period.end_date }}</td>
             <td>{{ period.due_date or '—' }}</td>

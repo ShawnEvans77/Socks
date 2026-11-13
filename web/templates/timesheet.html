@@ -12,7 +12,7 @@
     <select id="period" name="period" onchange="this.form.submit()">
       {% if not period %}<option value="" selected disabled>Pick a pay period…</option>{% endif %}
       {% for number, range in period_options %}
-        <option value="{{ number }}" {{ 'selected' if number == period }}>#{{ number }} · {{ range }}{{ ' · NOW' if number == current }}</option>
+        <option value="{{ number }}" {{ 'selected' if number == period }}>#{{ number }} · {{ range }}{{ ' · now' if number == current }}</option>
       {% endfor %}
     </select>
     <button class="btn small" type="submit">Show</button>

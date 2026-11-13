@@ -73,7 +73,7 @@ small { font-weight: 600; opacity: 0.75; }
   background: var(--yellow); color: var(--on-accent);
   border-bottom: 4px solid var(--line);
 }
-.brand { font-size: 2rem; letter-spacing: 0.06em; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; }
+.brand { font-size: 2rem; letter-spacing: 0.04em; text-decoration: none; }
 .topbar nav { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .topbar nav a {
   padding: 0.35rem 0.9rem; text-decoration: none; font-weight: 800;

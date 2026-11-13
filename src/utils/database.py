@@ -157,7 +157,7 @@ def parse_pay_period(
 ) -> str:
     value = value.strip()
 
-    if not value.isnumeric() or not first <= int(value) <= last:
+    if not (value.isascii() and value.isdigit()) or not first <= int(value) <= last:
         raise ValidationError(f"Pay period must be between {first} and {last}.")
 
     return value
