@@ -1,7 +1,13 @@
 from ..constants import guide, filenames
 from ..constants.schedule import DAYS_PER_WEEK, weekday_index
 from ..objects import clock
-from ..utils.database import normalize_shift_segments
+from ..utils.database import (
+    ValidationError,
+    format_pay_rate,
+    normalize_shift_segments,
+    normalize_weekday_segments,
+    parse_time,
+)
 from io import BytesIO
 from pathlib import Path
 from pypdf import PdfReader, PdfWriter
@@ -206,10 +212,9 @@ class SheetWriter:
         )
 
     def write_pay(self):
-        """Write the employee's pay rate."""
-        self._write_guide_field(
-            guide.Indices.rate_index.value, guide.LearningCenter.lc_ca_rate.value
-        )
+        """Write the employee's own hourly pay rate."""
+        rate = format_pay_rate(self.schedule_table.get_pay_rate(self.name))
+        self._write_guide_field(guide.Indices.rate_index.value, rate)
 
     def write_department_number(self):
         """Write the department number."""
@@ -273,12 +278,21 @@ class SheetWriter:
     ):
         extra_shift = extra_days.get(date)
         if extra_shift:
-            return list(normalize_shift_segments(extra_shift)), True
+            try:
+                return list(normalize_shift_segments(extra_shift)), True
+            except ValidationError as exc:
+                raise ValidationError(f"{date.strftime('%m/%d')}: {exc}") from exc
 
-        missed_segments = missed_split_shifts.get(date, set())
+        # Saved schedules are checked again here, so a bad row in the database
+        # can never produce negative or double-counted hours on a timesheet.
+        scheduled = normalize_weekday_segments(weekday_index(date), scheduled_segments)
+        missed_segments = {
+            tuple(parse_time(value) for value in segment)
+            for segment in missed_split_shifts.get(date, set())
+        }
         segments = [
-            tuple(segment) for segment in scheduled_segments
-            if tuple(segment) not in missed_segments
+            segment for segment in scheduled
+            if segment not in missed_segments
         ]
         worked = bool(segments) and date not in invalid_dates and date not in missed_days
         return segments, worked

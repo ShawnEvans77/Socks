@@ -22,6 +22,7 @@
     <p>
       <span class="tag">EMPLID {{ employee.emplid or 'not set' }}</span>
       <span class="tag">Dept {{ dept_prefix }}-{{ employee.budget }}</span>
+      <span class="tag">${{ employee.pay_rate }}/hr</span>
     </p>
     <div class="week">
       {% for segments in employee.schedule %}

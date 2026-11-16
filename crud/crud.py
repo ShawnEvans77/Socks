@@ -13,7 +13,7 @@ _MENU_GROUPS = (
     ("READ", Color.BLUE, (
         ("4", "View Pay Period Schedule", "read_pay_period_start_end"),
         ("5", "View Invalid Dates", "read_invalid_dates"),
-        ("6", "Employee Names, EMPLIDs & Budgets", "read_employee_names_and_emplids"),
+        ("6", "View Employee Details & Pay Rates", "read_employee_names_and_emplids"),
         ("7", "View Employee Schedules", "read_employee_schedules"),
     )),
     ("UPDATE", Color.YELLOW, (
@@ -21,10 +21,11 @@ _MENU_GROUPS = (
         ("9", "Update Invalid Date", "update_invalid_date"),
         ("10", "Update Employee Schedule", "update_employee_schedule"),
         ("11", "Update Employee Budget", "update_employee_budget"),
+        ("12", "Update Employee Pay Rate", "update_employee_pay_rate"),
     )),
     ("DELETE", Color.RED, (
-        ("12", "Delete Pay Period(s)", "delete_pay_period"),
-        ("13", "Delete Invalid Date(s)", "delete_invalid_date"),
+        ("13", "Delete Pay Period(s)", "delete_pay_period"),
+        ("14", "Delete Invalid Date(s)", "delete_invalid_date"),
     )),
 )
 _ACTIONS = {

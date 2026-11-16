@@ -141,7 +141,12 @@ def main() -> None:
                     step = 3
                 else:
                     _step_work_days(first, last, pay_period)
-                    file_name = _generate(first, last, pay_period, emplid)
+                    try:
+                        file_name = _generate(first, last, pay_period, emplid)
+                    except (DatabaseError, ValueError) as exc:
+                        console.warn(f"The timesheet could not be made: {exc}")
+                        console.info("Fix it with py -m crud.crud, then try again.")
+                        return
                     saved_name = console.color(
                         file_name, console.Color.BOLD, console.Color.WHITE
                     )

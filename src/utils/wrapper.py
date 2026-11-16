@@ -7,6 +7,7 @@ from .database import (
     ValidationError,
     parse_date,
     parse_budget,
+    parse_pay_rate,
     parse_emplid,
     parse_pay_period,
     parse_time,
@@ -117,6 +118,7 @@ class Wrapper:
                 break
 
             budget = Wrapper.fetch_budget("Department budget")
+            pay_rate = Wrapper.fetch_pay_rate("Hourly pay rate")
 
             print("\n    Build the weekly schedule, Sunday through Saturday.")
             schedule = []
@@ -146,12 +148,12 @@ class Wrapper:
                 print(f"\n    Revising {weekday}.")
                 schedule[weekday_index] = Wrapper._prompt_day_schedule(weekday)
 
-            employee = self.db.create_employee(name, schedule, emplid, budget)
+            employee = self.db.create_employee(name, schedule, emplid, budget, pay_rate)
             cache = guide.Tables.schedule_table.value
             cache.add_employee(employee)
             self._success(
-                f"Employee {employee.name} added with EMPLID {employee.emplid} "
-                f"and budget {employee.budget}."
+                f"Employee {employee.name} added with EMPLID {employee.emplid}, "
+                f"budget {employee.budget} and pay rate ${employee.pay_rate}/hr."
             )
 
         except GoBack:
@@ -255,18 +257,15 @@ class Wrapper:
             len("EMPLID"), *(len(employee.emplid or "NOT SET") for employee in employees)
         )
         budget_width = max(len("Budget"), *(len(str(employee.budget)) for employee in employees))
-        border = (
-            f"  ┌{'─' * (name_width + 2)}┬{'─' * (id_width + 2)}"
-            f"┬{'─' * (budget_width + 2)}┐"
-        )
-        middle = (
-            f"  ├{'─' * (name_width + 2)}┼{'─' * (id_width + 2)}"
-            f"┼{'─' * (budget_width + 2)}┤"
-        )
-        footer = (
-            f"  └{'─' * (name_width + 2)}┴{'─' * (id_width + 2)}"
-            f"┴{'─' * (budget_width + 2)}┘"
-        )
+        rate_width = max(len("Rate"), *(len(f"${employee.pay_rate}") for employee in employees))
+        widths = (name_width, id_width, budget_width, rate_width)
+
+        def line(left: str, join: str, right: str) -> str:
+            return f"  {left}" + join.join("─" * (width + 2) for width in widths) + right
+
+        border = line("┌", "┬", "┐")
+        middle = line("├", "┼", "┤")
+        footer = line("└", "┴", "┘")
 
         print()
         print(c("  Employees", Color.BOLD + Color.CYAN))
@@ -274,14 +273,16 @@ class Wrapper:
         print(
             f"  │ {pad(c('Employee', Color.BOLD), name_width)} │ "
             f"{pad(c('EMPLID', Color.BOLD), id_width)} │ "
-            f"{pad(c('Budget', Color.BOLD), budget_width)} │"
+            f"{pad(c('Budget', Color.BOLD), budget_width)} │ "
+            f"{pad(c('Rate', Color.BOLD), rate_width)} │"
         )
         print(c(middle, Color.DIM))
         for employee in employees:
             emplid = employee.emplid or "NOT SET"
             print(
                 f"  │ {pad(employee.name, name_width)} │ {pad(emplid, id_width)} │ "
-                f"{pad(str(employee.budget), budget_width)} │"
+                f"{pad(str(employee.budget), budget_width)} │ "
+                f"{pad(f'${employee.pay_rate}', rate_width)} │"
             )
         print(c(footer, Color.DIM))
         print()
@@ -298,7 +299,7 @@ class Wrapper:
             emplid = employee.emplid or "NOT SET"
             print(
                 f"\n  {c(employee.name, Color.BOLD)}  "
-                f"{c(f'EMPLID: {emplid} | Budget: {employee.budget}', Color.DIM)}"
+                f"{c(f'EMPLID: {emplid} | Budget: {employee.budget} | Rate: ${employee.pay_rate}/hr', Color.DIM)}"
             )
             for weekday, segments in zip(WEEKDAYS, employee.schedule):
                 shift = ", then ".join(
@@ -397,6 +398,30 @@ class Wrapper:
             ) or "Off"
             self._success(f"{weekday_name} schedule updated: {updated}.")
 
+        except GoBack:
+            self._cancelled()
+        except DatabaseError as exc:
+            self._error(str(exc))
+        finally:
+            self._footer()
+
+    def update_employee_pay_rate(self):
+        self._header("Employee Pay Rate Update", "UPDATE")
+        try:
+            employees = self.db.list_employees()
+            if not employees:
+                self._error("No employee records are available.")
+                return
+
+            employee = self._select_employee(employees)
+            print(f"    Current pay rate: ${employee.pay_rate}/hr")
+            pay_rate = Wrapper.fetch_pay_rate("New hourly pay rate")
+            cache = guide.Tables.schedule_table.value
+            if cache.has_name(employee.name):
+                pay_rate = cache.set_pay_rate(employee.name, pay_rate)
+            else:
+                pay_rate = self.db.set_employee_pay_rate(employee.name, pay_rate)
+            self._success(f"{employee.name}'s pay rate is now ${pay_rate}/hr.")
         except GoBack:
             self._cancelled()
         except DatabaseError as exc:
@@ -576,6 +601,18 @@ class Wrapper:
                 return None
             try:
                 return parse_time(raw)
+            except ValidationError as exc:
+                Wrapper._warn(str(exc))
+
+    @staticmethod
+    def fetch_pay_rate(prompt: str) -> str:
+        """Prompt for an hourly pay rate such as 19.12."""
+        while True:
+            raw = Wrapper._prompt(prompt, hint="Dollars per hour, such as 19.12")
+            if raw.lower() == "b":
+                raise GoBack
+            try:
+                return parse_pay_rate(raw)
             except ValidationError as exc:
                 Wrapper._warn(str(exc))
 

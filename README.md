@@ -49,7 +49,7 @@ Saved timesheets are listed on the home page, where you can open, download or de
 ### Employees, pay periods and days off
 These tabs replace the CRUD menu.
 
-- **employees**: add an employee, or edit their EMPLID, budget and weekly schedule (split shifts included).
+- **employees**: add an employee, or edit their EMPLID, budget, hourly pay rate and weekly schedule (split shifts included).
 - **pay periods**: add, edit or delete pay periods. The end date is filled in 14 days after the start.
 - **days off**: add holidays and other days when nobody is paid for scheduled hours.
 
@@ -174,16 +174,17 @@ py -m crud.crud
   ║   READ                                     ║
   ║   4  View Pay Period Schedule              ║
   ║   5  View Invalid Dates                    ║
-  ║   6  Employee Names, EMPLIDs & Budgets     ║
+  ║   6  View Employee Details & Pay Rates     ║
   ║   7  View Employee Schedules               ║
   ║   UPDATE                                   ║
   ║   8  Update Pay Period                     ║
   ║   9  Update Invalid Date                   ║
   ║  10  Update Employee Schedule              ║
   ║  11  Update Employee Budget                ║
+  ║  12  Update Employee Pay Rate              ║
   ║   DELETE                                   ║
-  ║  12  Delete Pay Period(s)                  ║
-  ║  13  Delete Invalid Date(s)                ║
+  ║  13  Delete Pay Period(s)                  ║
+  ║  14  Delete Invalid Date(s)                ║
   ╠════════════════════════════════════════════╣
   ║   m  Show menu                             ║
   ╚════════════════════════════════════════════╝
@@ -194,9 +195,11 @@ py -m crud.crud
 - The main app asks about schedule changes once. Answering `n` uses the saved schedule without asking about missed or extra days.
 - Answering `y` lets employees record missed days, missed split intervals, and extra workdays.
 - Changes are only for the timesheet being made. They never change the saved schedule.
-- CRUD and the web app can add employees with required EMPLIDs, budgets, and seven-day schedules, including split shifts.
+- CRUD and the web app can add employees with required EMPLIDs, budgets, hourly pay rates, and seven-day schedules, including split shifts.
 - Employees can have split shifts. Generated PDFs are flattened and include the EMPLID, Prepared by name, checked CA box, and department number `885-<budget>`.
 - Existing employees default to budget `54`, producing department number `885-54`.
+- Each employee has their own hourly pay rate, printed on their timesheet. Employees saved before pay rates existed start at `$19.12`; change it on the employees tab or with CRUD option 12.
+- Shifts are checked everywhere they're entered: a shift can't end before it starts or at the same time it starts, and a split day's two shifts can't overlap or run back to back with no break. Split shifts can be typed in either order. Saved schedules are checked again each time a timesheet is made.
 - Days off (invalid dates) are left off every timesheet, unless you record extra hours worked on that day.
 - Timesheets are saved in `timesheets` as `<Last>_Timesheet_<period>.pdf`.
 

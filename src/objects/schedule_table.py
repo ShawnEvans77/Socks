@@ -11,6 +11,7 @@ class ScheduleTable:
         self.schedule_dict = {}
         self.emplid_dict = {}
         self.budget_dict = {}
+        self.pay_rate_dict = {}
         self.missed_days_dict = {}
         self.missed_split_shifts_dict = {}
         self.extra_days_dict = {}
@@ -30,6 +31,7 @@ class ScheduleTable:
         self.schedule_dict[name] = [list(day) for day in employee.schedule]
         self.emplid_dict[name] = employee.emplid
         self.budget_dict[name] = employee.budget
+        self.pay_rate_dict[name] = employee.pay_rate
         self.missed_days_dict[name] = set()
         self.missed_split_shifts_dict[name] = {}
         self.extra_days_dict[name] = {}
@@ -69,6 +71,19 @@ class ScheduleTable:
         saved_budget = self.db.set_employee_budget(name, budget)
         self.budget_dict[normalized_name] = saved_budget
         return saved_budget
+
+    def get_pay_rate(self, name: str) -> str:
+        """Return the employee's hourly pay rate, such as "19.12"."""
+
+        return self.pay_rate_dict[name.strip().lower()]
+
+    def set_pay_rate(self, name: str, pay_rate: str) -> str:
+        """Save an employee's hourly pay rate in the database and refresh the cache."""
+
+        normalized_name = name.strip().lower()
+        saved_rate = self.db.set_employee_pay_rate(name, pay_rate)
+        self.pay_rate_dict[normalized_name] = saved_rate
+        return saved_rate
 
     def add_missed_days(self, name: str, missed_days: set):
         """Record an employee's missed dates for the current timesheet."""

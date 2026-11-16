@@ -21,6 +21,7 @@ from flask import (
 )
 
 from src.constants import filenames, guide
+from src.constants.payroll import DEFAULT_PAY_RATE
 from src.constants.schedule import WEEKDAYS
 from src.objects.pay_table import PayTable
 from src.objects.schedule_table import ScheduleTable
@@ -33,6 +34,7 @@ from src.utils.database import (
     parse_budget,
     parse_emplid,
     parse_pay_period,
+    parse_pay_rate,
     parse_year,
 )
 
@@ -43,6 +45,7 @@ _LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
 _FIRST_PERIOD = guide.PeriodLength.first_period.value
 _LAST_PERIOD = guide.PeriodLength.last_period.value
 _DEFAULT_BUDGET = guide.LearningCenter.default_budget.value
+_DEFAULT_PAY_RATE = DEFAULT_PAY_RATE
 _DEPT_PREFIX = guide.LearningCenter.lc_dept_prefix.value
 
 
@@ -356,7 +359,10 @@ def create_app(
     def new_employee():
         return _render_employee_form(
             employee=None,
-            values={"first": "", "last": "", "emplid": "", "budget": str(_DEFAULT_BUDGET)},
+            values={
+                "first": "", "last": "", "emplid": "",
+                "budget": str(_DEFAULT_BUDGET), "pay_rate": _DEFAULT_PAY_RATE,
+            },
             rows=_rows_from_schedule([()] * len(WEEKDAYS)),
         )
 
@@ -366,7 +372,7 @@ def create_app(
         existing = db.list_employees()
         values = {
             key: " ".join(request.form.get(key, "").split())
-            for key in ("first", "last", "emplid", "budget")
+            for key in ("first", "last", "emplid", "budget", "pay_rate")
         }
         rows = _rows_from_form(request.form)
         errors = {}
@@ -391,11 +397,17 @@ def create_app(
         except ValidationError as exc:
             errors["budget"] = str(exc)
 
+        pay_rate = None
+        try:
+            pay_rate = parse_pay_rate(values["pay_rate"])
+        except ValidationError as exc:
+            errors["pay_rate"] = str(exc)
+
         schedule, day_errors = _parse_schedule(rows)
 
         if not errors and not day_errors:
             try:
-                employee = db.create_employee(name, schedule, emplid, budget)
+                employee = db.create_employee(name, schedule, emplid, budget, pay_rate)
             except DatabaseError as exc:
                 errors["name"] = str(exc)
             else:
@@ -417,7 +429,10 @@ def create_app(
             return redirect(url_for("employees"))
         return _render_employee_form(
             employee=employee,
-            values={"emplid": employee.emplid or "", "budget": str(employee.budget)},
+            values={
+                "emplid": employee.emplid or "", "budget": str(employee.budget),
+                "pay_rate": employee.pay_rate,
+            },
             rows=_rows_from_schedule(employee.schedule),
         )
 
@@ -431,7 +446,8 @@ def create_app(
             return redirect(url_for("employees"))
 
         values = {
-            key: request.form.get(key, "").strip() for key in ("emplid", "budget")
+            key: request.form.get(key, "").strip()
+            for key in ("emplid", "budget", "pay_rate")
         }
         rows = _rows_from_form(request.form)
         errors = {}
@@ -455,6 +471,12 @@ def create_app(
         except ValidationError as exc:
             errors["budget"] = str(exc)
 
+        pay_rate = employee.pay_rate
+        try:
+            pay_rate = parse_pay_rate(values["pay_rate"])
+        except ValidationError as exc:
+            errors["pay_rate"] = str(exc)
+
         schedule, day_errors = _parse_schedule(rows)
 
         if not errors and not day_errors:
@@ -463,6 +485,8 @@ def create_app(
                     db.set_employee_emplid(employee.name, emplid)
                 if budget != employee.budget:
                     db.set_employee_budget(employee.name, budget)
+                if pay_rate != employee.pay_rate:
+                    db.set_employee_pay_rate(employee.name, pay_rate)
                 for weekday, segments in enumerate(schedule):
                     if tuple(segments) != tuple(employee.schedule[weekday]):
                         db.set_employee_schedule(employee.name, weekday, segments)

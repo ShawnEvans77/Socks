@@ -34,6 +34,7 @@ class EmployeeScheduleCrudTests(unittest.TestCase):
             "JAMIE", "RIVERA",              # Case-insensitive duplicate name.
             "Taylor", "Ng", "11111111",    # Duplicate EMPLID.
             "90000001", "54",
+            "0", "$20.5",                     # Rejected rate, then a valid one.
             "n",                              # Sunday off.
             "y", "9AM", "12PM", "n",       # Monday single interval.
             "n",                              # Tuesday off.
@@ -55,6 +56,7 @@ class EmployeeScheduleCrudTests(unittest.TestCase):
         created = next(employee for employee in employees if employee.name == "Taylor Ng")
         self.assertEqual(created.emplid, "90000001")
         self.assertEqual(created.budget, 54)
+        self.assertEqual(created.pay_rate, "20.50")
         self.assertEqual(created.schedule[1], (("9AM", "12PM"),))
         self.assertEqual(created.schedule[2], ())
         self.assertEqual(created.schedule[3], (("12PM", "2PM"), ("2:30PM", "3:30PM")))
@@ -67,7 +69,7 @@ class EmployeeScheduleCrudTests(unittest.TestCase):
         wrapper = wrapper_module.Wrapper.__new__(wrapper_module.Wrapper)
         wrapper.db = self.db
         cache = FakeScheduleTable(name="not yet saved")
-        inputs = ["Taylor", "Ng", "90000001", "54", "n", "n", "n", "n", "n", "n", "n", "b"]
+        inputs = ["Taylor", "Ng", "90000001", "54", "19.12", "n", "n", "n", "n", "n", "n", "n", "b"]
 
         with use_guide_tables(schedule_table=cache), \
              patch("builtins.input", side_effect=inputs), \

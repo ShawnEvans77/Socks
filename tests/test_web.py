@@ -1,4 +1,5 @@
 import datetime as dt
+import sqlite3
 import tempfile
 import unittest
 from io import BytesIO
@@ -193,11 +194,40 @@ class WebAppTests(unittest.TestCase):
         self.assertIn("Missed", page)
         self.assertIn("16.5", self.pdf_text())
 
+    def test_pdf_uses_each_employees_own_pay_rate(self):
+        self.assertEqual(self.post_timesheet().status_code, 200)
+        self.assertIn("$19.12", self.pdf_text())
+
+        self.db.set_employee_pay_rate("Shawn Evans", "23.40")
+        self.assertEqual(self.post_timesheet().status_code, 200)
+        text = self.pdf_text()
+        self.assertIn("$23.40", text)
+        self.assertNotIn("$19.12", text)
+
+    def test_bad_saved_schedule_is_caught_when_making_a_timesheet(self):
+        # Simulate a bad row written outside Socks: Monday's shifts overlap.
+        con = sqlite3.connect(self.db_path)
+        try:
+            con.execute(
+                "INSERT INTO employee_schedule_segments VALUES(1, 1, 1, '2PM', '5PM')"
+            )
+            con.commit()
+        finally:
+            con.close()
+
+        response = self.post_timesheet()
+        page = response.get_data(as_text=True)
+        self.assertEqual(response.status_code, 500)
+        self.assertIn("Monday: The shifts 1PM - 4PM and 2PM - 5PM overlap.", page)
+        self.assertFalse(self.output.exists())
+
     def test_bad_custom_hours_show_error_and_keep_input(self):
         for fields, message in (
             ({"mode_2": "custom"}, "Enter the hours you worked"),
             ({"mode_2": "custom", "start1_2": "09:00"}, "both a start time and an end time"),
-            ({"mode_2": "custom", "start1_2": "11:00", "end1_2": "09:00"}, "end must be later"),
+            ({"mode_2": "custom", "start1_2": "11:00", "end1_2": "09:00"}, "ends before it starts"),
+            ({"mode_2": "custom", "start1_2": "09:00", "end1_2": "12:00",
+              "start2_2": "10:00", "end2_2": "13:00"}, "overlap"),
         ):
             with self.subTest(fields=fields):
                 response = self.post_timesheet(**fields)
@@ -259,17 +289,24 @@ class WebAppTests(unittest.TestCase):
     def test_create_employee_with_split_schedule(self):
         response = self.client.post("/employees/new", data={
             "first": "grace", "last": "hopper", "emplid": "55556666", "budget": "72",
-            "d2_s1": "09:00", "d2_e1": "12:00", "d2_s2": "13:00", "d2_e2": "15:30",
+            "pay_rate": "$21.5",
+            # Second shift typed first: it is saved earliest first.
+            "d2_s1": "13:00", "d2_e1": "15:30", "d2_s2": "09:00", "d2_e2": "12:00",
         })
         self.assertEqual(response.status_code, 302)
         employee = services.find_employee(self.db.list_employees(), "Grace Hopper")
         self.assertEqual(employee.emplid, "55556666")
         self.assertEqual(employee.budget, 72)
+        self.assertEqual(employee.pay_rate, "21.50")
         self.assertEqual(employee.schedule[2], (("9AM", "12PM"), ("1PM", "3:30PM")))
+        self.assertIn("$21.50/hr", self.client.get("/employees").get_data(as_text=True))
         self.assertEqual(employee.schedule[0], ())
 
     def test_create_employee_rejects_bad_input(self):
-        good = {"first": "Grace", "last": "Hopper", "emplid": "55556666", "budget": "72"}
+        good = {
+            "first": "Grace", "last": "Hopper", "emplid": "55556666", "budget": "72",
+            "pay_rate": "19.12",
+        }
         for change, message in (
             ({"last": ""}, "Enter both a first and last name."),
             ({"first": "SHAWN", "last": "evans"}, "already exists"),
@@ -277,7 +314,15 @@ class WebAppTests(unittest.TestCase):
             ({"emplid": "90000001"}, "already assigned"),
             ({"budget": "x"}, "Budget must contain digits only."),
             ({"d1_s1": "09:00"}, "both a start time and an end time"),
-            ({"d1_s1": "12:00", "d1_e1": "09:00"}, "end must be later"),
+            ({"d1_s1": "12:00", "d1_e1": "09:00"}, "ends before it starts"),
+            ({"d1_s1": "09:00", "d1_e1": "09:00"}, "starts and ends at the same time"),
+            ({"d1_s1": "09:00", "d1_e1": "12:00", "d1_s2": "11:00", "d1_e2": "14:00"},
+             "9AM - 12PM and 11AM - 2PM overlap"),
+            ({"d1_s1": "09:00", "d1_e1": "12:00", "d1_s2": "12:00", "d1_e2": "14:00"},
+             "no break between them"),
+            ({"pay_rate": ""}, "Pay rate must be a dollar amount"),
+            ({"pay_rate": "0"}, "more than $0.00"),
+            ({"pay_rate": "19.125"}, "at most two decimals"),
         ):
             with self.subTest(change=change):
                 response = self.client.post("/employees/new", data={**good, **change})
@@ -292,6 +337,7 @@ class WebAppTests(unittest.TestCase):
 
         response = self.client.post("/employees/edit", data={
             "name": "Shawn Evans", "emplid": "99990000", "budget": "60",
+            "pay_rate": "22.75",
             "d1_s1": "10:00", "d1_e1": "12:00",          # Monday changed
             "d5_s1": "09:00", "d5_e1": "10:30",          # Friday added
             # Wednesday and Thursday left blank: cleared
@@ -299,6 +345,7 @@ class WebAppTests(unittest.TestCase):
         self.assertEqual(response.status_code, 302)
         employee = self.db.list_employees()[0]
         self.assertEqual((employee.emplid, employee.budget), ("99990000", 60))
+        self.assertEqual(employee.pay_rate, "22.75")
         self.assertEqual(employee.schedule[1], (("10AM", "12PM"),))
         self.assertEqual(employee.schedule[5], (("9AM", "10:30AM"),))
         self.assertEqual(employee.schedule[3], ())
@@ -306,12 +353,13 @@ class WebAppTests(unittest.TestCase):
 
     def test_edit_employee_rejects_bad_input_without_saving(self):
         response = self.client.post("/employees/edit", data={
-            "name": "Shawn Evans", "emplid": "", "budget": "60",
+            "name": "Shawn Evans", "emplid": "", "budget": "60", "pay_rate": "30",
             "d1_s1": "10:00", "d1_e1": "12:00",
         })
         self.assertEqual(response.status_code, 422)
         employee = self.db.list_employees()[0]
         self.assertEqual((employee.emplid, employee.budget), ("90000001", 54))
+        self.assertEqual(employee.pay_rate, "19.12")
         self.assertEqual(employee.schedule[1], (("1PM", "4PM"),))
 
     # ── Pay periods ──────────────────────────────────────────────────────────

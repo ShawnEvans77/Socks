@@ -79,11 +79,15 @@ class FakePayTable:
 
 
 class FakeScheduleTable:
-    def __init__(self, name="Shawn Evans", schedule=None, emplid="90000001", budget=54):
+    def __init__(
+        self, name="Shawn Evans", schedule=None, emplid="90000001", budget=54,
+        pay_rate="19.12",
+    ):
         self.name = name.lower()
         self.schedule = schedule or weekly_schedule()
         self.emplid = emplid
         self.budget = budget
+        self.pay_rate = pay_rate
         self.missed = set()
         self.missed_split_shifts = {}
         self.missed_split_shifts_dict = {self.name: self.missed_split_shifts}
@@ -91,6 +95,7 @@ class FakeScheduleTable:
         self.schedule_dict = {self.name: self.schedule}
         self.emplid_dict = {self.name: self.emplid}
         self.budget_dict = {self.name: self.budget}
+        self.pay_rate_dict = {self.name: self.pay_rate}
         self.missed_days_dict = {self.name: self.missed}
         self.extra_days_dict = {self.name: self.extra}
 
@@ -111,6 +116,13 @@ class FakeScheduleTable:
         self.budget = int(budget)
         return self.budget
 
+    def get_pay_rate(self, _name):
+        return self.pay_rate
+
+    def set_pay_rate(self, _name, pay_rate):
+        self.pay_rate = pay_rate
+        return pay_rate
+
     def get(self, _name):
         return self.schedule
 
@@ -121,6 +133,7 @@ class FakeScheduleTable:
         ]
         self.emplid_dict[name] = employee.emplid
         self.budget_dict[name] = employee.budget
+        self.pay_rate_dict[name] = employee.pay_rate
         self.missed_days_dict[name] = set()
         self.missed_split_shifts_dict[name] = {}
         self.extra_days_dict[name] = {}

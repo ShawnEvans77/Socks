@@ -36,7 +36,6 @@ class LearningCenter(Enum):
     lc_dept_name = 'Learning Center'
     lc_dept_prefix = '885'
     default_budget = DEFAULT_BUDGET
-    lc_ca_rate = '$19.12'
     lc_dept_ext = '5821'
 
 class PeriodLength(Enum):

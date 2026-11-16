@@ -1,8 +1,16 @@
 from ..constants import filenames
-from ..constants.payroll import DEFAULT_BUDGET, FIRST_PAY_PERIOD, LAST_PAY_PERIOD
+from ..constants.payroll import (
+    DEFAULT_BUDGET,
+    DEFAULT_PAY_RATE,
+    FIRST_PAY_PERIOD,
+    LAST_PAY_PERIOD,
+    MAX_PAY_RATE,
+)
+from ..constants.schedule import WEEKDAYS
 from contextlib import contextmanager
 from dataclasses import dataclass
 import datetime as d
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 import re
 import shutil
@@ -45,6 +53,7 @@ class Employee:
     emplid: str | None
     budget: int
     schedule: tuple[tuple[tuple[str, str], ...], ...]
+    pay_rate: str = DEFAULT_PAY_RATE
 
 
 def default_database_path() -> str:
@@ -119,6 +128,33 @@ def parse_budget(value: str | int) -> int:
     return int(raw)
 
 
+def parse_pay_rate(value: str | int | float | Decimal) -> str:
+    """Normalize an hourly pay rate such as "$19.12" or "20" to "19.12" / "20.00"."""
+
+    raw = str(value).strip().replace(",", "")
+    if raw.startswith("$"):
+        raw = raw[1:].strip()
+    if not re.fullmatch(r"\d+(\.\d{1,2})?|\.\d{1,2}", raw):
+        raise ValidationError(
+            "Pay rate must be a dollar amount with at most two decimals, such as 19.12."
+        )
+    try:
+        rate = Decimal(raw)
+    except InvalidOperation as exc:
+        raise ValidationError("Pay rate must be a dollar amount, such as 19.12.") from exc
+    if rate <= 0:
+        raise ValidationError("Pay rate must be more than $0.00.")
+    if rate > MAX_PAY_RATE:
+        raise ValidationError(f"Pay rate can't be more than ${MAX_PAY_RATE} an hour.")
+    return f"{rate:.2f}"
+
+
+def format_pay_rate(rate: str) -> str:
+    """Return a stored pay rate the way the timesheet shows it, e.g. "$19.12"."""
+
+    return f"${parse_pay_rate(rate)}"
+
+
 def parse_time(value: str) -> str:
     """Normalize a 12-hour time while preserving minute precision."""
     value = value.strip().upper()
@@ -152,21 +188,50 @@ def normalize_shift_segments(segments) -> tuple[tuple[str, str], ...]:
     if len(raw_segments) > 2:
         raise ValidationError("A day can have at most two work intervals.")
 
-    normalized = []
-    previous_end = None
+    parsed = []
     for segment in raw_segments:
         if len(segment) != 2:
             raise ValidationError("Each work interval needs a start and end time.")
         start, end = (parse_time(str(value)) for value in segment)
         start_minutes, end_minutes = time_minutes(start), time_minutes(end)
-        if end_minutes <= start_minutes:
-            raise ValidationError("Each interval's end must be later than its start.")
-        if previous_end is not None and start_minutes < previous_end:
-            raise ValidationError("Work intervals cannot overlap or be out of order.")
-        normalized.append((start, end))
-        previous_end = end_minutes
+        if end_minutes == start_minutes:
+            raise ValidationError(
+                f"The shift {start} - {end} starts and ends at the same time."
+            )
+        if end_minutes < start_minutes:
+            raise ValidationError(
+                f"The shift {start} - {end} ends before it starts. "
+                "A shift must start and end on the same day."
+            )
+        parsed.append((start_minutes, end_minutes, start, end))
 
-    return tuple(normalized)
+    # Split shifts may be entered in either order; keep them earliest first.
+    parsed.sort()
+    for earlier, later in zip(parsed, parsed[1:]):
+        _, earlier_end, earlier_start_text, earlier_end_text = earlier
+        later_start, _, later_start_text, later_end_text = later
+        shifts = (
+            f"{earlier_start_text} - {earlier_end_text} and "
+            f"{later_start_text} - {later_end_text}"
+        )
+        if later_start < earlier_end:
+            raise ValidationError(f"The shifts {shifts} overlap.")
+        if later_start == earlier_end:
+            raise ValidationError(
+                f"The shifts {shifts} have no break between them. "
+                f"Enter them as one shift, {earlier_start_text} - {later_end_text}."
+            )
+
+    return tuple((start, end) for _, _, start, end in parsed)
+
+
+def normalize_weekday_segments(weekday: int, segments) -> tuple[tuple[str, str], ...]:
+    """Validate one weekday's shifts, naming the weekday in any error."""
+
+    try:
+        return normalize_shift_segments(segments)
+    except ValidationError as exc:
+        raise ValidationError(f"{WEEKDAYS[weekday]}: {exc}") from exc
 
 
 def parse_pay_period(
@@ -231,7 +296,8 @@ class SocksDatabase:
                     employee_id INTEGER PRIMARY KEY,
                     name TEXT NOT NULL COLLATE NOCASE UNIQUE,
                     emplid TEXT UNIQUE,
-                    budget INTEGER NOT NULL DEFAULT {DEFAULT_BUDGET}
+                    budget INTEGER NOT NULL DEFAULT {DEFAULT_BUDGET},
+                    pay_rate TEXT NOT NULL DEFAULT '{DEFAULT_PAY_RATE}'
                 )
                 """
             )
@@ -242,6 +308,12 @@ class SocksDatabase:
                 cur.execute(
                     "ALTER TABLE employees "
                     f"ADD COLUMN budget INTEGER NOT NULL DEFAULT {DEFAULT_BUDGET}"
+                )
+            if "pay_rate" not in employee_columns:
+                # Existing employees keep the rate that used to be hard-coded.
+                cur.execute(
+                    "ALTER TABLE employees "
+                    f"ADD COLUMN pay_rate TEXT NOT NULL DEFAULT '{DEFAULT_PAY_RATE}'"
                 )
             legacy_schedule_exists = cur.execute(
                 "SELECT 1 FROM sqlite_master WHERE type='table' AND name='employee_schedule'"
@@ -368,7 +440,7 @@ class SocksDatabase:
     def list_employees(self) -> list[Employee]:
         with self.connection() as con:
             employees = con.execute(
-                "SELECT employee_id, name, emplid, budget "
+                "SELECT employee_id, name, emplid, budget, pay_rate "
                 "FROM employees ORDER BY employee_id"
             ).fetchall()
             shifts = con.execute(
@@ -387,8 +459,9 @@ class SocksDatabase:
                 emplid,
                 int(budget),
                 tuple(tuple(day) for day in schedules[employee_id]),
+                pay_rate,
             )
-            for employee_id, name, emplid, budget in employees
+            for employee_id, name, emplid, budget, pay_rate in employees
         ]
 
     def create_employee(
@@ -397,6 +470,7 @@ class SocksDatabase:
         schedule,
         emplid: str | None = None,
         budget: str | int = DEFAULT_BUDGET,
+        pay_rate: str = DEFAULT_PAY_RATE,
     ) -> Employee:
         name = name.strip()
         if not name:
@@ -404,16 +478,19 @@ class SocksDatabase:
         if len(schedule) != 7:
             raise ValidationError("An employee schedule must contain seven weekdays.")
 
-        normalized_schedule = tuple(normalize_shift_segments(day) for day in schedule)
+        normalized_schedule = tuple(
+            normalize_weekday_segments(weekday, day) for weekday, day in enumerate(schedule)
+        )
 
         normalized_emplid = parse_emplid(emplid) if emplid is not None else None
         normalized_budget = parse_budget(budget)
+        normalized_rate = parse_pay_rate(pay_rate)
         with self.connection() as con:
             cur = con.cursor()
             try:
                 cur.execute(
-                    "INSERT INTO employees(name, emplid, budget) VALUES(?,?,?)",
-                    (name, normalized_emplid, normalized_budget),
+                    "INSERT INTO employees(name, emplid, budget, pay_rate) VALUES(?,?,?,?)",
+                    (name, normalized_emplid, normalized_budget, normalized_rate),
                 )
             except sqlite3.IntegrityError as exc:
                 raise DuplicateError("Employee name or EMPLID already exists.") from exc
@@ -431,13 +508,15 @@ class SocksDatabase:
                 ],
             )
 
-        return Employee(name, normalized_emplid, normalized_budget, normalized_schedule)
+        return Employee(
+            name, normalized_emplid, normalized_budget, normalized_schedule, normalized_rate
+        )
 
     def set_employee_schedule(self, name: str, weekday: int, segments) -> None:
         """Replace one Sunday-first weekday schedule with up to two intervals."""
         if not isinstance(weekday, int) or not 0 <= weekday <= 6:
             raise ValidationError("Weekday must be an integer from 0 (Sunday) to 6 (Saturday).")
-        normalized = normalize_shift_segments(segments)
+        normalized = normalize_weekday_segments(weekday, segments)
         with self.connection() as con:
             cur = con.cursor()
             employee = cur.execute(
@@ -486,6 +565,17 @@ class SocksDatabase:
             if result.rowcount == 0:
                 raise NotFoundError(f"Employee {name!r} does not exist.")
         return normalized_budget
+
+    def set_employee_pay_rate(self, name: str, pay_rate: str) -> str:
+        normalized_rate = parse_pay_rate(pay_rate)
+        with self.connection() as con:
+            result = con.execute(
+                "UPDATE employees SET pay_rate=? WHERE name=? COLLATE NOCASE",
+                (normalized_rate, name.strip()),
+            )
+            if result.rowcount == 0:
+                raise NotFoundError(f"Employee {name!r} does not exist.")
+        return normalized_rate
 
     def delete_employee(self, name: str) -> None:
         name = name.strip()

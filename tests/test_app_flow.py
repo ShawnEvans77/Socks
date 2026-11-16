@@ -253,10 +253,11 @@ class AppFlowTests(unittest.TestCase):
             "update_invalid_date",
             "update_employee_schedule",
             "update_employee_budget",
+            "update_employee_pay_rate",
             "delete_pay_period",
             "delete_invalid_date",
         ]
-        choices = [str(number) for number in range(1, 14)] + ["q"]
+        choices = [str(number) for number in range(1, 15)] + ["q"]
 
         with redirect_stdout(StringIO()), \
              patch.object(crud_app.wrapper, "Wrapper", return_value=RecordingWrapper()), \
@@ -276,7 +277,7 @@ class AppFlowTests(unittest.TestCase):
             int(number)
             for number in re.findall(r"(?m)^\s*║\s*(\d+)\s{2}", plain_output)
         ]
-        self.assertEqual(numbers, list(range(1, 14)))
+        self.assertEqual(numbers, list(range(1, 15)))
         self.assertIn("3  New Employee", plain_output)
 
     def test_crud_exit_command_quits_from_menu(self):
