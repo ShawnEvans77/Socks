@@ -413,11 +413,24 @@ class SheetWriter:
 
         output_folder = Path(filenames.output_folder)
         output_folder.mkdir(parents=True, exist_ok=True)
+        self.set_title(Path(output_file_name).stem)
         self.writer.write(output_folder / output_file_name)
 
-    def to_bytes(self) -> bytes:
+    def set_title(self, title: str):
+        """Set the PDF's document title.
+
+        Browser viewers use it as the file name for "Save to Drive" and
+        similar actions, so it must match the timesheet's file name instead
+        of the template's own title.
+        """
+
+        self.writer.add_metadata({"/Title": title})
+
+    def to_bytes(self, title: str | None = None) -> bytes:
         """Return the finished timesheet PDF as bytes."""
 
+        if title:
+            self.set_title(title)
         buffer = BytesIO()
         self.writer.write(buffer)
         return buffer.getvalue()

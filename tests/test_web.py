@@ -173,6 +173,10 @@ class WebAppTests(unittest.TestCase):
             self.assertEqual(served.status_code, 200)
             self.assertEqual(served.mimetype, "application/pdf")
             self.assertTrue(served.data.startswith(b"%PDF"))
+            from pypdf import PdfReader
+            from io import BytesIO
+            title = PdfReader(BytesIO(served.data)).metadata.title
+            self.assertEqual(title, "Evans_Timesheet_1")
         with self.client.get("/timesheets/Evans_Timesheet_1.pdf?download=1") as download:
             self.assertIn("attachment", download.headers["Content-Disposition"])
 

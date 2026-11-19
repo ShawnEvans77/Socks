@@ -94,6 +94,7 @@ class PdfFeatureTests(unittest.TestCase):
         ):
             with self.subTest(text=expected):
                 self.assertIn(expected, text)
+        self.assertEqual(reader.metadata.title, "Evans_Timesheet_1")
 
     def test_missed_split_interval_displays_remaining_interval_as_single_shift(self):
         schedule = weekly_schedule()

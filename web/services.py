@@ -322,4 +322,5 @@ def generate_timesheet(
     )
     sheet.name = employee.name
     sheet.write_timesheet()
-    return sheet.to_bytes()
+    title = timesheet_file_name(employee.name, pay_period).removesuffix(".pdf")
+    return sheet.to_bytes(title=title)
